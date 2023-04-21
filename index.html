@@ -479,7 +479,7 @@
         var original_pubkey = pubKey;
         pubKey      = pubKey.substring( 2 );
         // console.log( pubKey );
-        var relay = "wss://relay.taxi";
+        var relay = "wss://offchain.pub";
         var socket = new WebSocket( relay );
         async function handleMessage( message ) {
             var [ type, subId, event ] = JSON.parse( message.data );
