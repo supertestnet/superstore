@@ -533,7 +533,7 @@
                 var price = content[ "price" ] / 100;
                 var existing_num = $$( '.store_product' ).length;
                 var html = `
-                    <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word;">
+                    <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word; margin-bottom: 1rem;">
                         <img class="product_image" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
                         <div class="product_name"></div>
                         <div>$<span class="product_price"></span></div>
@@ -667,7 +667,7 @@
     </div>
     <div class="view_store">
         <div class="minicart">Cart (<span class="minicart_item_count">0</span> items) <button class="view_cart">View cart</button></div>
-        <div class="store_products" style="display: flex; justify-content: space-around; align-items: center;"></div>
+        <div class="store_products" style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap;"></div>
     </div>
     <div class="blank_view"></div>
     <script>
