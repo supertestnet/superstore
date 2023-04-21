@@ -28,7 +28,7 @@
         }
         input, textarea {
             line-height: 1.25;
-            width: calc( 100% - 2rem );
+            width: calc( 100% );
             height: 1.8rem;
             font-size: 1.15rem;
             border: 1px solid grey;
@@ -41,12 +41,12 @@
             margin-bottom: 1rem;
         }
         .product input, .product select, .product textarea {
-            width: calc( 50% - 2rem );
+            width: calc( 50% - 0.2rem );
             margin-left: .2rem;
             margin-bottom: 1rem;
         }
         .product .desc {
-            width: calc( 100% - 3.8rem );
+            width: calc( 100% - .2rem );
             height: 5rem;
         }
         .plus_and_minus {
@@ -90,10 +90,14 @@
         }
         @media screen and (max-width: 600px) {
             .product input, .product select, .product textarea {
-                width: calc( 100% - 2rem );
+                width: calc( 100% );
             }
             .product .desc {
-                width: calc( 100% - 2rem );
+                width: calc( 100% );
+            }
+            .product button {
+            	width: calc( 100% );
+            	margin-bottom: 1rem;
             }
         }
     </style>
