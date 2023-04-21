@@ -704,6 +704,7 @@
             if ( window.location.href.indexOf( "?" ) > -1 ) var url = window.location.href.substring( 0, window.location.href.indexOf( "?" ) ); else var url = window.location.href;
             alert( "Here is your sharable store url:\n\n" + url + "?pubkey=" + original_pubkey +
                 "\n\nHere is your private management url:\n\n" + url + "?privkey=" + privKey );
+            window.location.href = url + "?privkey=" + privkey;
         }
         var renderCart = () => {
             var total = 0;
@@ -748,7 +749,6 @@
                 await waitSomeSeconds( 2 );
                 var txinfo = await addressReceivedMoneyInThisTx( whisper_address, mempoolNetwork );
                 if ( txinfo[ 2 ] >= dollarsToSats( ( total / 100 ).toFixed( 2 ) ) ) {
-                    alert( `Thank you for your business. Here is your proof of payment: ${whisper_key} -- keep this on you til you recieve your item. If the seller does not send you your item, you can contact him on nostr at ${$_GET[ "pubkey" ].substring( 2 )} and show him your proof of payment.` );
                     var buyer_info = {}
                     buyer_info[ "whisper_key" ] = whisper_key;
                     if ( sessionStorage.edelivery_form ) buyer_info[ "edelivery_info" ] = sessionStorage.edelivery_form;
@@ -764,6 +764,8 @@
                     }
                     var signedEvent = await getSignedEvent(event, privKey);
                     socket.send(JSON.stringify([ "EVENT", signedEvent ]));
+                    await waitSomeSeconds( 2 );
+                    alert( `Thank you for your business. Here is your proof of payment: ${whisper_key} -- keep this on you til you recieve your item. If the seller does not send you your item, you can contact him on nostr at ${$_GET[ "pubkey" ].substring( 2 )} and show him your proof of payment.` );
                 }
             }
         }
@@ -846,8 +848,9 @@
                     });
                     var paid_amount = balance_in_dollars;
                     if ( sale[ 3 ] ) paid_amount = ( total / 100 ).toFixed( 2 );
+                    var delivery_info = (sale[ 0 ][ "shipping_info" ]) ? sale[ 0 ][ "shipping_info" ].replace( /\n/g, "<br>"):sale[ 0 ][ "edelivery_info" ].replace( /\n/g, "<br>");
                     var order = `
-                        <div class="minicart order" data-id="${sale[ 2 ]}" style="background-color: ${bgcolor}; display: flex; justify-content: space-between; text-align: left;"><div>Ship to:<br>${sale[ 0 ][ "shipping_info" ].replace( /\n/g, "<br>")}</div><div style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );">${shipped_instructions}</button></div></div>
+                        <div class="minicart order" data-id="${sale[ 2 ]}" style="background-color: ${bgcolor}; display: flex; justify-content: space-between; text-align: left;"><div>Deliver to:<br>${delivery_info}</div><div style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );">${shipped_instructions}</button></div></div>
                         <div style="display: none;border: 1px solid black; border-radius: 1rem; padding: 1rem;"><div style="font-weight: bold;">Details</div><br>${items}<div style="text-align: right;">Total they owed: $${( total / 100 ).toFixed( 2 )}</div><div style="text-align: right;">Total they paid: $${paid_amount}</div></div>
                     `;
                     $( '.orders' ).innerHTML += order;
