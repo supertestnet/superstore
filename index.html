@@ -876,6 +876,7 @@
             }
             socket.send(JSON.stringify( subscription ));
         }
+        socket.addEventListener( 'open', openConnection );
         if ( $_GET[ "pubkey" ] ) {
             //this codeblock creates the whisper address
             var linking_pubkey = $_GET[ "pubkey" ];
@@ -885,12 +886,10 @@
             var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
             $( '.make_store' ).style.display = "none";
             $( '.view_store' ).style.display = "block";
-            // socket.addEventListener( 'open', openConnection );
         }
         if ( $_GET[ "privkey" ] ) {
             var html = `<div class="minicart"><span class="sales_count">0</span> new sales <button class="manage_sales_btn">Manage sales</button></div>`;
             $( '.manage_sales_toolbar' ).innerHTML = html;
-            // socket.addEventListener( 'open', openConnection );
             var manageSales = () => {
                 $( '.products' ).style.display = "none";
                 $( '.store_maker' ).parentElement.style.display = "none";
