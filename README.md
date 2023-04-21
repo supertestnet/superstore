@@ -21,7 +21,7 @@ Nostr makes a lot of stuff that used to need a server not need one anymore. Or a
 - [x] You just add products and shipping info and there is no other special software or plugins to run
 - [x] It gives you a shareable link where anyone can visit your store, which is free and easy
 - [x] It gives you a private link where you can manage your store, e.g. add more products or remove existing ones -- all free and easy
-- [x] The built in bitcoin wallet is non-custodial and lets you withdraw your earnings whenever you want for free, and it's easy
+- [x] The built in bitcoin wallet is self-custodial and lets you withdraw your earnings whenever you want for free, and it's easy
 - [x] If you notice an underlying theme here it's that running a store used to be costly and hard but this tool makes it free and easy
 
 # How do I try it?
