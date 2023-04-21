@@ -96,8 +96,8 @@
                 width: calc( 100% );
             }
             .product button {
-            	width: calc( 100% );
-            	margin-bottom: 1rem;
+                width: calc( 100% );
+                margin-bottom: 1rem;
             }
         }
     </style>
@@ -506,7 +506,7 @@
             // console.log('content:', content);
             if ( kind === 12196 ) {
                 $( '.store_products' ).innerHTML = ``;
-            	if ( $( '.sales_count' ) ) $( '.sales_count' ).innerText = 0;
+                if ( $( '.sales_count' ) ) $( '.sales_count' ).innerText = 0;
                 var array = event.tags[ 0 ];
                 array.splice( 0, 1 );
                 // console.log( array );
@@ -584,7 +584,7 @@
                                 cart.push({
                                     item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
                                     price: Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText ) * 100,
-		                            shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,                                });
+                                    shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,                                });
                                 $( '.blank_view' ).style.display = "none";
                                 $( '.store_products' ).style.display = "flex";
                             }
@@ -738,13 +738,13 @@
             $( '.preview_pane' ).innerHTML = html;
         }
         $( '.store_maker' ).onclick = async () => {
-        	var i; for ( i=0; i<$$( 'select' ).length; i++ ) {
-        	    var item = $$( 'select' )[ i ];
-        	    if ( item.value.includes( "---" ) ) {
-        	        alert( "You forgot to select a shipping zone on one of your products. Please try again." );
-        	        return;
-        	    }
-        	}
+            var i; for ( i=0; i<$$( 'select' ).length; i++ ) {
+                var item = $$( 'select' )[ i ];
+                if ( item.value.includes( "---" ) ) {
+                    alert( "You forgot to select a shipping zone on one of your products. Please try again." );
+                    return;
+                }
+            }
             var product_ids = [];
             var i; for ( i=0; i<$$( '.product' ).length; i++ ) {
                 var array = [...$$( '.product' )[ i ].children];
@@ -789,8 +789,8 @@
             var shareable = `${url}?pubkey=${original_pubkey}&relay=${relay}`;
             var private = `${url}?privkey=${privKey}&relay=${relay}`;
             if ( $_GET[ "network" ] ) {
-	            shareable += `&network=${$_GET[ "network" ]}`;
-	            private += `&network=${$_GET[ "network" ]}`;
+                shareable += `&network=${$_GET[ "network" ]}`;
+                private += `&network=${$_GET[ "network" ]}`;
             }
             var content = `<p><a href="${shareable}" target="_blank">Click here</a> to share your store</p><p><a href="${private}" target="_blank">Click here</a> to manage your store and withdraw your earnings</p>`;
             showModal( content, true );
@@ -863,7 +863,7 @@
                     sessionStorage.removeItem( "modal_cleared" );
                     var receipt_items = ``;
                     cart.forEach( function( item, index ) {
-                    	receipt_items += `<div>Item: ${item[ "item" ]} | Price: $${( item[ "price" ] / 100 ).toFixed( 2 )}</div>`;
+                        receipt_items += `<div>Item: ${item[ "item" ]} | Price: $${( item[ "price" ] / 100 ).toFixed( 2 )}</div>`;
                     });
                     var content = `<p>Thank you for your business. Here is your receipt:</p><p style="font-weight: bold;">Items purchased</p>${receipt_items}<p>Total: $${( total / 100 ).toFixed( 2 )}</p><p>Proof of payment: ${whisper_key}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
                     showModal( content, true );
@@ -1025,18 +1025,18 @@
     <script>
         function checkHeartbeat() {
             setTimeout( () => {
-            	//it is important that this be inside the timeout otherwise
-            	//it may detect a connection loss on pageload
-	            if ( socket.readyState != 1 ) {
-	                alert( "You lost your connection to your relay. If you receive this message twice, please refresh your browser." );
-	                socket = new WebSocket( relay );
-	                socket.removeEventListener( 'open', openConnection );
-	                socket.removeEventListener( 'message', handleMessage );
-	                socket = new WebSocket( relay );
-	                socket.addEventListener( 'message', handleMessage );
-	                socket.addEventListener( 'open', openConnection );
-	            }
-            	checkHeartbeat();
+                //it is important that this be inside the timeout otherwise
+                //it may detect a connection loss on pageload
+                if ( socket.readyState != 1 ) {
+                    alert( "You lost your connection to your relay. If you receive this message twice, please refresh your browser." );
+                    socket = new WebSocket( relay );
+                    socket.removeEventListener( 'open', openConnection );
+                    socket.removeEventListener( 'message', handleMessage );
+                    socket = new WebSocket( relay );
+                    socket.addEventListener( 'message', handleMessage );
+                    socket.addEventListener( 'open', openConnection );
+                }
+                checkHeartbeat();
             }, 2000 );
         }
         async function init() {
