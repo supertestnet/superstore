@@ -3,7 +3,7 @@ A simple bitcoin webstore with whisper addresses for enhanced privacy
 
 # Video
 
-https://www.youtube.com/watch?v=cAH0384V1Bo
+[![](https://supertestnet.github.io/superstore/superstore-thumbnail.png)](https://www.youtube.com/watch?v=cAH0384V1Bo)
 
 # What is this?
 
