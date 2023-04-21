@@ -773,7 +773,7 @@
             socket.send(JSON.stringify([ "EVENT", signedEvent ]));
             if ( window.location.href.indexOf( "?" ) > -1 ) var url = window.location.href.substring( 0, window.location.href.indexOf( "?" ) ); else var url = window.location.href;
         	sessionStorage.removeItem( "modal_cleared" );
-            var content = `<p>Here is your sharable store url:</p><p>${url}?pubkey=${original_pubkey}</p><p>Here is your private management url:</p><p>${url}?privkey=${privKey}</p>`;
+            var content = `<p><a href="${url}?pubkey=${original_pubkey}" target="_blank">Click here</a> to share your store</p><p><a href="${url}?privkey=${privKey}" target="_blank">Click here</a> to manage your store and withdraw your earnings</p>`;
             showModal( content, true );
             await getNote( "modal_cleared" );
             //alert( "Here is your sharable store url:\n\n" + url + "?pubkey=" + original_pubkey +
