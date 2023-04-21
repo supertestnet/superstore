@@ -781,8 +781,8 @@
             var shareable = `${url}?pubkey=${original_pubkey}&relay=${relay}`;
             var private = `${url}?privkey=${privKey}&relay=${relay}`;
             if ( $_GET[ "network" ] ) {
-	            var shareable += `&network=${$_GET[ "network" ]}`;
-	            var private += `&network=${$_GET[ "network" ]}`;
+	            shareable += `&network=${$_GET[ "network" ]}`;
+	            private += `&network=${$_GET[ "network" ]}`;
             }
             var content = `<p><a href="${shareable}" target="_blank">Click here</a> to share your store</p><p><a href="${private}" target="_blank">Click here</a> to manage your store and withdraw your earnings</p>`;
             showModal( content, true );
