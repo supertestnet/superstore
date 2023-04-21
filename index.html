@@ -479,7 +479,7 @@
         var original_pubkey = pubKey;
         pubKey      = pubKey.substring( 2 );
         // console.log( pubKey );
-        if ( $_GET[ "relay" ] ) var relay = $_GET[ "relay" ]; else var relay = "wss://offchain.pub";
+        if ( $_GET[ "relay" ] ) var relay = $_GET[ "relay" ]; else var relay = "wss://nostrue.com";
         var socket = new WebSocket( relay );
         async function handleMessage( message ) {
             var [ type, subId, event ] = JSON.parse( message.data );
@@ -789,7 +789,7 @@
             await getNote( "modal_cleared" );
             //alert( "Here is your sharable store url:\n\n" + url + "?pubkey=" + original_pubkey +
             // "\n\nHere is your private management url:\n\n" + url + "?privkey=" + privKey );
-            window.location.href = url + "?privkey=" + privKey;
+            window.location.href = private;
         }
         var renderCart = () => {
             var total = 0;
@@ -849,14 +849,15 @@
                         "pubkey"     : pubKey,
                     }
                     var signedEvent = await getSignedEvent(event, privKey);
-                    socket.send(JSON.stringify([ "EVENT", signedEvent ]));
+                    socket.send( JSON.stringify([ "EVENT", signedEvent ]) );
+                    console.log( "make sure this gets to the relay:", JSON.stringify([ "EVENT", signedEvent ]) );
                     await waitSomeSeconds( 2 );
                     sessionStorage.removeItem( "modal_cleared" );
                     var receipt_items = ``;
-                    cart.forEach( function( item ) {
-                    	receipt_items.innerHTML += `<p>Item: ${item[ "item" ]} Price: ${item[ "price" ]}</p>`;
+                    cart.forEach( function( item, index ) {
+                    	receipt_items += `<div>Item: ${item[ "item" ]} | Price: $${( item[ "price" ] / 100 ).toFixed( 2 )}</div>`;
                     });
-                    var content = `<p>Thank you for your business. Here is your receipt:</p><p style="font-weight: bold;">Items purchased:</p><p>${receipt_items}</p><p>Total: ${( total / 100 ).toFixed( 2 )}</p><p>Proof of payment: ${whisper_key}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
+                    var content = `<p>Thank you for your business. Here is your receipt:</p><p style="font-weight: bold;">Items purchased</p>${receipt_items}<p>Total: $${( total / 100 ).toFixed( 2 )}</p><p>Proof of payment: ${whisper_key}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
                     showModal( content, true );
                     await getNote( "modal_cleared" );
                     // alert( `Thank you for your business. Here is your proof of payment: ${whisper_key}\n\nKeep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.` );
