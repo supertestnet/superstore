@@ -506,6 +506,7 @@
             // console.log('content:', content);
             if ( kind === 12196 ) {
                 $( '.store_products' ).innerHTML = ``;
+            	if ( $( '.sales_count' ) ) $( '.sales_count' ).innerText = 0;
                 var array = event.tags[ 0 ];
                 array.splice( 0, 1 );
                 // console.log( array );
@@ -647,7 +648,7 @@
     </script>
 </head>
 <body>
-    <h1>Welcome to the simple nostr webstore</h1>
+    <h1>Welcome to superstore, the simple nostr webstore</h1>
     <div class="make_store">
         <div class="products">
             <div class="manage_sales_toolbar"></div>
@@ -1016,16 +1017,20 @@
     </script>
     <script>
         function checkHeartbeat() {
-            if ( socket.readyState != 1 ) {
-                alert( "You lost your connection to your relay. If you receive this message twice, please refresh your browser." );
-                socket = new WebSocket( relay );
-                socket.removeEventListener( 'open', openConnection );
-                socket.removeEventListener( 'message', handleMessage );
-                socket = new WebSocket( relay );
-                socket.addEventListener( 'message', handleMessage );
-                socket.addEventListener( 'open', openConnection );
-            }
-            setTimeout( checkHeartbeat, 2000 );
+            setTimeout( () => {
+            	//it is important that this be inside the timeout otherwise
+            	//it may detect a connection loss on pageload
+	            if ( socket.readyState != 1 ) {
+	                alert( "You lost your connection to your relay. If you receive this message twice, please refresh your browser." );
+	                socket = new WebSocket( relay );
+	                socket.removeEventListener( 'open', openConnection );
+	                socket.removeEventListener( 'message', handleMessage );
+	                socket = new WebSocket( relay );
+	                socket.addEventListener( 'message', handleMessage );
+	                socket.addEventListener( 'open', openConnection );
+	            }
+            	checkHeartbeat();
+            }, 2000 );
         }
         async function init() {
             sessionStorage[ "btc_price" ] = await getBitcoinPrice();
