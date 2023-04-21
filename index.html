@@ -704,7 +704,7 @@
             if ( window.location.href.indexOf( "?" ) > -1 ) var url = window.location.href.substring( 0, window.location.href.indexOf( "?" ) ); else var url = window.location.href;
             alert( "Here is your sharable store url:\n\n" + url + "?pubkey=" + original_pubkey +
                 "\n\nHere is your private management url:\n\n" + url + "?privkey=" + privKey );
-            window.location.href = url + "?privkey=" + privkey;
+            window.location.href = url + "?privkey=" + privKey;
         }
         var renderCart = () => {
             var total = 0;
