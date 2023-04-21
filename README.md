@@ -10,7 +10,7 @@ Superstore is a solution to this problem: I often wish I had a store where I cou
 Nostr makes a lot of stuff that used to need a server not need one anymore. Or at least, you can often use a public nostr relay instead of a regular server. So I wondered if I could make a simple webstore that removes almost all of the hassles I've experienced in the past. So behold superstore:
 
 - [x] It's hosted on github pages, which is free and easy
-- [x] Or you can take download the index.html file and run it locally, also free and easy
+- [x] Or you can download the index.html file and run it locally, also free and easy
 - [x] You don't need to name your store (you'll probably link to it on your blog or similar, so it will be associated with you that way)
 - [x] You don't need to style it because it already looks great
 - [ ] Ok that's a total lie, it looks like trash. Maybe I will add custom styling as a feature someday
