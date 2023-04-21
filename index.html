@@ -738,6 +738,13 @@
             $( '.preview_pane' ).innerHTML = html;
         }
         $( '.store_maker' ).onclick = async () => {
+        	var i; for ( i=0; i<$$( 'select' ).length; i++ ) {
+        	    var item = $$( 'select' )[ i ];
+        	    if ( item.value.includes( "---" ) ) {
+        	        alert( "You forgot to select a shipping zone on one of your products. Please try again." );
+        	        return;
+        	    }
+        	}
             var product_ids = [];
             var i; for ( i=0; i<$$( '.product' ).length; i++ ) {
                 var array = [...$$( '.product' )[ i ].children];
