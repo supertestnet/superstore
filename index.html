@@ -258,6 +258,10 @@
                 return new Promise(function (resolve, reject) {
                     if (!data_i_seek) {
                         setTimeout(async function () {
+                        	if ( $( '.blank_view h2' ).innerText != "Checkout" || $( '.blank_view' ).style.display == "none" ) {
+                        		resolve( "stopped" );
+                        		return;
+                        	}
                             console.log("waiting for address to receive money...");
                             try {
                                 itReceivedMoney = await addressOnceHadMoney(address, network);
@@ -462,18 +466,22 @@
                 }
                 // console.log( content );
                 var price = content[ "price" ] / 100;
-                //todo: stop xss
+                var existing_num = $$( '.store_product' ).length;
                 var html = `
                     <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word;">
-                        <img src="${content.image}" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
-                        <div class="product_name">${content.product}</div>
-                        <div>$<span class="product_price">${price.toFixed( 2 )}</span></div>
-                        <div style="display: none;" class="shipping_zone">${content.shipping_zone}</span></div>
+                        <img class="product_image" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
+                        <div class="product_name"></div>
+                        <div>$<span class="product_price"></span></div>
+                        <div style="display: none;" class="shipping_zone"></span></div>
                         <button class="view_product_btn">View product</button>
                         <button class="add_to_cart">Add to cart</button>
                     </div>
                 `;
                 $( '.store_products' ).innerHTML += ( html );
+                $$( '.store_product .product_image' )[ existing_num ].src = content.image;
+                $$( '.store_product .product_name' )[ existing_num ].innerText = content.product;
+                $$( '.store_product .product_price' )[ existing_num ].innerText = price.toFixed( 2 );
+                $$( '.store_product .shipping_zone' )[ existing_num ].innerText = content.shipping_zone;
                 $$( '.add_to_cart' ).forEach( function( item ) {
                     item.onclick = (e) => {
                         $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
@@ -487,22 +495,26 @@
                 $$( '.view_product_btn' ).forEach( function( item ) {
                     item.onclick = (e) => {
                         $( '.store_products' ).style.display = "none";
-                        //todo: stop xss
                         $( '.blank_view' ).innerHTML = `
-                            <div>
+                            <div class="viewed_product">
                                 <div style="font-weight: bold; font-size: 3rem; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.store_products' ).style.display = 'flex';">⇦ <span style="vertical-align: middle; font-size: 1.5rem;">Back</span></div>
                                 <div style="font-weight: bold;">Product</div>
-                                <div><span class="product_name">${content.product}</span><br><br></div>
-                                <img src="${content.image}" style="border: 1px solid black; width: 100%; margin: auto;"><br><br>
+                                <div><span class="product_name"></span></div><br>
+                                <img class="product_image" style="border: 1px solid black; width: 100%; margin: auto;"><br><br>
                                 <div style="font-weight: bold;">Price</div>
-                                <div>$<span class="product_price">${( content.price / 100 ).toFixed( 2 )}</span><br><br></div>
+                                <div>$<span class="product_price"></span></div><br>
                                 <div style="font-weight: bold;">Description</div>
-                                <div>${content.description}<br><br></div>
+                                <div class="product_description"></div><br>
                                 <div style="font-weight: bold;">Ships to</div>
-                                <div>${content.shipping_zone}<br><br></div>
+                                <div class="shipping_zone"></div><br>
                                 <button class="add_to_cart">Add to cart</button>
                             </div>
                         `;
+                        $( '.viewed_product .product_name' ).innerText = content.product;
+                        $( '.viewed_product .product_image' ).src = content.image;
+                        $( '.viewed_product .product_price' ).innerText = ( content.price / 100 ).toFixed( 2 );
+                        $( '.viewed_product .product_description' ).innerText = content.description;
+                        $( '.viewed_product .shipping_zone' ).innerText = content.shipping_zone;
                         $( '.blank_view' ).style.display = "block";
                         $$( '.add_to_cart' ).forEach( function( item ) {
                             item.onclick = (e) => {
@@ -740,13 +752,14 @@
                 if ( $( '.edelivery_form' ) ) sessionStorage.edelivery_form = $( '.edelivery_form' ).value;
                 $( '.blank_view' ).innerHTML = `
                     <div style="font-weight: bold; font-size: 3rem; cursor: pointer;" onclick="renderCart();">⇦ <span style="vertical-align: middle; font-size: 1.5rem;">Back</span></div>
-                    <div style="font-weight: bold;">Checkout</div><br>
+                    <h2>Checkout</h2>
                     Please send ${dollarsToSats( ( total / 100 ).toFixed( 2 ) )} sats and wait for your auto-generated proof of payment (your shipment is not guaranteed til you have your proof of payment)
                     <br>
                 `;
                 $( '.blank_view' ).append( createQR( whisper_address ) );
                 $( '.blank_view' ).append( whisper_address );
-                await loopTilAddressReceivesMoney( whisper_address, mempoolNetwork );
+                var was_it_stopped = await loopTilAddressReceivesMoney( whisper_address, mempoolNetwork );
+                if ( was_it_stopped == "stopped" ) return;
                 await waitSomeSeconds( 2 );
                 var txinfo = await addressReceivedMoneyInThisTx( whisper_address, mempoolNetwork );
                 if ( txinfo[ 2 ] >= dollarsToSats( ( total / 100 ).toFixed( 2 ) ) ) {
@@ -766,7 +779,7 @@
                     var signedEvent = await getSignedEvent(event, privKey);
                     socket.send(JSON.stringify([ "EVENT", signedEvent ]));
                     await waitSomeSeconds( 2 );
-                    alert( `Thank you for your business. Here is your proof of payment: ${whisper_key} -- keep this on you til you recieve your item. If the seller does not send you your item, you can contact him on nostr at ${$_GET[ "pubkey" ].substring( 2 )} and show him your proof of payment.` );
+                    alert( `Thank you for your business. Here is your proof of payment: ${whisper_key}\n\nKeep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.` );
                 }
             }
         }
@@ -843,19 +856,30 @@
                     }
                     var total = 0;
                     var items = ``;
-                    //todo: stop xss
+                    var names_and_prices = [];
                     sale[ 1 ].forEach( function( item, index ) {
-		                total = total + item[ "price" ];
-		                items += `<div class="minicart" style="display: flex; justify-content: space-between; text-align: left;"><div>${item[ "item" ]}</div><div style="text-align: right;align-self: center;">$${( item[ "price" ] / 100 ).toFixed( 2 )}</div></div>`;
+		                total = total + Number( item[ "price" ] );
+		                items += `<div class="minicart" style="display: flex; justify-content: space-between; text-align: left;"><div class="product_name"></div><div class="product_price" style="text-align: right;align-self: center;"></div></div>`;
+		                names_and_prices.push( [ item[ "item" ], item[ "price" ] ] );
                     });
                     var paid_amount = balance_in_dollars;
                     if ( sale[ 3 ] ) paid_amount = ( total / 100 ).toFixed( 2 );
-                    var delivery_info = (sale[ 0 ][ "shipping_info" ]) ? sale[ 0 ][ "shipping_info" ].replace( /\n/g, "<br>"):sale[ 0 ][ "edelivery_info" ].replace( /\n/g, "<br>");
+                    var delivery_info = (sale[ 0 ][ "shipping_info" ]) ? sale[ 0 ][ "shipping_info" ]:sale[ 0 ][ "edelivery_info" ];
                     var order = `
-                        <div class="minicart order" data-id="${sale[ 2 ]}" style="background-color: ${bgcolor}; display: flex; justify-content: space-between; text-align: left;"><div>Deliver to:<br>${delivery_info}</div><div style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );">${shipped_instructions}</button></div></div>
-                        <div style="display: none;border: 1px solid black; border-radius: 1rem; padding: 1rem;"><div style="font-weight: bold;">Details</div><br>${items}<div style="text-align: right;">Total they owed: $${( total / 100 ).toFixed( 2 )}</div><div style="text-align: right;">Total they paid: $${paid_amount}</div></div>
+                        <div class="minicart order" style="background-color: ${bgcolor}; display: flex; justify-content: space-between; text-align: left;"><div>Deliver to:<br><div class="delivery_info"></div></div><div style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );">${shipped_instructions}</button></div></div>
+                        <div style="display: none; border: 1px solid black; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem;"><div style="font-weight: bold;">Details</div><br>${items}<div style="text-align: right;">Total they owed: $${( total / 100 ).toFixed( 2 )}</div><div style="text-align: right;">Total they paid: $${paid_amount}</div></div>
                     `;
                     $( '.orders' ).innerHTML += order;
+                    $$( '.delivery_info' )[ $$( '.delivery_info' ).length - 1 ].innerText = delivery_info;
+                    var existing_number = $$( '.blank_view .minicart .product_name' ).length;
+	                names_and_prices.forEach( function( item, index ) {
+	                	//must be -2 the first time and -1 the second time
+	                	//names_and_prices.length is 2 so I can emulate -2 with - names_and_prices.length - index
+	                	//then the second time it will be names_and_prices.length - 1 which is -1
+						$$( '.blank_view .minicart .product_name' )[ existing_number - ( names_and_prices.length - index ) ].innerText = item[ 0 ];
+			            $$( '.blank_view .minicart .product_price' )[ existing_number - ( names_and_prices.length - index ) ].innerText = "$" + ( item[ 1 ] / 100 ).toFixed( 2 )
+                    });
+;
                 });
                 $( '.withdraw' ).onclick = async () => {
                 	var some_unshipped_items = false;
