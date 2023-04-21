@@ -1002,7 +1002,10 @@
     </script>
     <script>
     	function checkHeartbeat() {
+    		console.log( "checking heartbeat..." );
     	    if ( socket.readyState != 1 ) {
+    	    	alert( "you have no connection to the relay!" );
+		        socket = new WebSocket( relay );
     	        socket.removeEventListener( 'open', openConnection );
     	        socket.removeEventListener( 'message', handleMessage );
     	        socket = new WebSocket( relay );
