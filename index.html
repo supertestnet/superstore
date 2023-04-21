@@ -848,7 +848,11 @@
                     socket.send(JSON.stringify([ "EVENT", signedEvent ]));
                     await waitSomeSeconds( 2 );
                     sessionStorage.removeItem( "modal_cleared" );
-                    var content = `<p>Thank you for your business. Here is your proof of payment: ${whisper_key}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
+                    var receipt_items = ``;
+                    cart.forEach( function( item ) {
+                    	receipt_items.innerHTML += `<p>Item: ${item[ "item" ]} Price: ${item[ "price" ]}</p>`;
+                    });
+                    var content = `<p>Thank you for your business. Here is your receipt:</p><p style="font-weight: bold;">Items purchased:</p><p>${receipt_items}</p><p>Total: ${( total / 100 ).toFixed( 2 )}</p><p>Proof of payment: ${whisper_key}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
                     showModal( content, true );
                     await getNote( "modal_cleared" );
                     // alert( `Thank you for your business. Here is your proof of payment: ${whisper_key}\n\nKeep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.` );
