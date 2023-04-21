@@ -1,5 +1,5 @@
 # Superstore
-A simple nostr webstore with whisper addresses for enhanced privacy
+A simple bitcoin webstore with whisper addresses for enhanced privacy
 
 # What is this?
 
