@@ -32,6 +32,8 @@ There is no setup process for the store itself, you just immediately start addin
 
 Important! Save your private link. It contains your private key which you'll need to access your money and manage your store. If you lose your private key you lose your money. Keep it secret, keep it safe!
 
+Also make sure you withdraw your money from the store frequently. The site uses whisper keys, which are sent to you in dms and not stored anywhere but on whatever relay you use. I personally don't trust nostr relays to store my dms forever so I recommend you withdraw your money quickly when you receive it, don't just let it sit there for weeks on end or the nostr relay you are connected to might delete your dms or go offline and leave you stranded without access to your money
+
 # What are some upcoming features?
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
@@ -40,4 +42,5 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [ ] Better error handling -- sometimes mempool.space's api starts rate-limiting you, which causes errors, which can stop the page from running. Worst case scenario: you just paid for an order when the page crashes and you lose your money forever.
 - [ ] Lightning support -- I can probably add this through submarine swaps but if I do it probably won't be very pretty, it will probably just confuse people because their wallet will say their payment is pending for a very long time while I wait for you to come online to finish the submarine swap
 - [ ] Custom styling -- people like to make things look nice and feel like it's themed after their regular blog or website or whatever. Ok cool but visual flare isn't very important to me so maybe someone else can add code for that.
+- [ ] Add custom relays -- there's no reason to have it limit you to just one hardcoded relay other than that's the easiest way to code this up. But soon I hope to add an option to set custom relays so you aren't limited to just one.
 - [ ] Add more items to this upcoming features list -- yes, this is a meta feature, but I don't want to think about more stuff to add to this list so just write an issue so I can think about it ok?
