@@ -584,7 +584,7 @@
                                 cart.push({
                                     item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
                                     price: Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText ) * 100,
-                                });
+		                            shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,                                });
                                 $( '.blank_view' ).style.display = "none";
                                 $( '.store_products' ).style.display = "flex";
                             }
