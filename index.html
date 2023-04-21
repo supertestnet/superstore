@@ -477,7 +477,7 @@
         // console.log( pubKey );
         var relay = "wss://relay.taxi";
         var socket = new WebSocket( relay );
-        socket.addEventListener('message', async function( message ) {
+        async function handleMessage( message ) {
             var [ type, subId, event ] = JSON.parse( message.data );
             var { kind, content } = event || {}
             if (!event || event === true) return;
@@ -587,7 +587,8 @@
                     }
                 });
             }
-        });
+        }
+        socket.addEventListener( 'message', handleMessage );
         async function getSignedEvent(event, privateKey) {
             var eventData = JSON.stringify([
                 0,                    // Reserved for future use
@@ -851,7 +852,20 @@
         $( '.view_cart' ).onclick = renderCart;
     </script>
     <script>
-        //example image: https://bitcoinscoresby.com/wp-content/uploads/2023/04/Thumbnail-Universal-Mummy-450.jpeg
+    	async function openConnection() {
+            console.log( "connected to " + relay );
+            var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
+    		if ( $_GET[ "pubkey"] ) {
+	            var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196 ] }
+	            var subscription = [ "REQ", subId, filter ];
+    		}
+    		if ( $_GET[ "privkey"] ) {
+                var filter  = { "#p": [ pubKey ], kinds: [ 4 ] }
+                var filter2  = { authors: [ pubKey ], kinds: [ 12196 ] }
+                var subscription = [ "REQ", subId, filter, filter2 ];
+    		}
+            socket.send(JSON.stringify( subscription ));
+    	}
         if ( $_GET[ "pubkey" ] ) {
             //this codeblock creates the whisper address
             var linking_pubkey = $_GET[ "pubkey" ];
@@ -861,25 +875,12 @@
             var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
             $( '.make_store' ).style.display = "none";
             $( '.view_store' ).style.display = "block";
-            socket.addEventListener('open', async function( e ) {
-                console.log( "connected to " + relay );
-                var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
-                var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196 ] }
-                var subscription = [ "REQ", subId, filter ];
-                socket.send(JSON.stringify( subscription ));
-            });
+            // socket.addEventListener( 'open', openConnection );
         }
         if ( $_GET[ "privkey" ] ) {
             var html = `<div class="minicart"><span class="sales_count">0</span> new sales <button class="manage_sales_btn">Manage sales</button></div>`;
             $( '.manage_sales_toolbar' ).innerHTML = html;
-            socket.addEventListener('open', async function( e ) {
-                console.log( "connected to " + relay );
-                var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
-                var filter  = { "#p": [ pubKey ], kinds: [ 4 ] }
-                var filter2  = { authors: [ pubKey ], kinds: [ 12196 ] }
-                var subscription = [ "REQ", subId, filter, filter2 ];
-                socket.send(JSON.stringify( subscription ));
-            });
+            // socket.addEventListener( 'open', openConnection );
             var manageSales = () => {
                 $( '.products' ).style.display = "none";
                 $( '.store_maker' ).parentElement.style.display = "none";
@@ -1000,8 +1001,20 @@
         }
     </script>
     <script>
+    	function checkHeartbeat() {
+    		console.log( "checking heartbeat..." );
+    	    if ( socket.readyState != 1 ) {
+    	        socket.removeEventListener( 'open', openConnection );
+    	        socket.removeEventListener( 'message', handleMessage );
+    	        socket = new WebSocket( relay );
+    	        socket.addEventListener( 'message', handleMessage );
+    	        socket.addEventListener( 'open', openConnection );
+    	    }
+    	    setTimeout( checkHeartbeat, 2000 );
+    	}
         async function init() {
             sessionStorage[ "btc_price" ] = await getBitcoinPrice();
+            // checkHeartbeat();
         }
         init();
     </script>
