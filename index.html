@@ -461,7 +461,7 @@
                 }
                 // console.log( content );
                 var price = content[ "price" ] / 100;
-                //todo: xss
+                //todo: stop xss
                 var html = `
                     <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word;">
                         <img src="${content.image}" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
@@ -842,6 +842,7 @@
                     }
                     var total = 0;
                     var items = ``;
+                    //todo: stop xss
                     sale[ 1 ].forEach( function( item, index ) {
 		                total = total + item[ "price" ];
 		                items += `<div class="minicart" style="display: flex; justify-content: space-between; text-align: left;"><div>${item[ "item" ]}</div><div style="text-align: right;align-self: center;">$${( item[ "price" ] / 100 ).toFixed( 2 )}</div></div>`;
