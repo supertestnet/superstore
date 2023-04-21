@@ -1007,7 +1007,7 @@
     <script>
         function checkHeartbeat() {
             if ( socket.readyState != 1 ) {
-                alert( "you lost your connection to the relay so please refresh your browser" );
+                alert( "You lost your connection to your relay. If you receive this message twice, please refresh your browser." );
                 socket = new WebSocket( relay );
                 socket.removeEventListener( 'open', openConnection );
                 socket.removeEventListener( 'message', handleMessage );
