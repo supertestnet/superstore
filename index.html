@@ -821,7 +821,7 @@
                 $( '.blank_view' ).innerHTML = `
                     <div style="font-weight: bold; font-size: 3rem; cursor: pointer;" onclick="renderCart();">⇦ <span style="vertical-align: middle; font-size: 1.5rem;">Back</span></div>
                     <h2>Checkout</h2>
-                    Please send ${dollarsToSats( ( total / 100 ).toFixed( 2 ) )} sats and wait for your auto-generated proof of payment (your shipment is not guaranteed til you have your proof of payment)
+                    Please send ${dollarsToSats( ( total / 100 ).toFixed( 2 ) )} sats and wait for your auto-generated receipt (your shipment is not guaranteed til you have your receipt)
                     <br>
                 `;
                 $( '.blank_view' ).append( createQR( whisper_address ) );
