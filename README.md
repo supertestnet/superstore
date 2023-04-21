@@ -38,9 +38,12 @@ Also make sure you withdraw your money from the store frequently. The site uses 
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
 
-- [ ] Better nostr connections -- about a third of the time when I load this page I don't actually get a connection to the nostr relay I use. It just sort of times out and an error message appears in my console. The user has no visiblity into this, the site just doesn't work (and if you're trying to view a store it just won't populate) which is super frustrating. It typically works when I refresh but I can automate that without refreshing the page so I should do that. (I should also add automatic reconnection logic in case the connection drops.)
 - [ ] Better error handling -- sometimes mempool.space's api starts rate-limiting you, which causes errors, which can stop the page from running. Worst case scenario: you just paid for an order when the page crashes and you lose your money forever.
 - [ ] Lightning support -- I can probably add this through submarine swaps but if I do it probably won't be very pretty, it will probably just confuse people because their wallet will say their payment is pending for a very long time while I wait for you to come online to finish the submarine swap
 - [ ] Custom styling -- people like to make things look nice and feel like it's themed after their regular blog or website or whatever. Ok cool but visual flare isn't very important to me so maybe someone else can add code for that.
 - [ ] Add custom relays -- there's no reason to have it limit you to just one hardcoded relay other than that's the easiest way to code this up. But soon I hope to add an option to set custom relays so you aren't limited to just one.
 - [ ] Add more items to this upcoming features list -- yes, this is a meta feature, but I don't want to think about more stuff to add to this list so just write an issue so I can think about it ok?
+
+# Things that used to be upcoming features but are now added (or fixed, if they were bugs)
+
+- [x] Better nostr connections -- about a third of the time when I load this page I don't actually get a connection to the nostr relay I use. It just sort of times out and an error message appears in my console. The user has no visiblity into this, the site just doesn't work (and if you're trying to view a store it just won't populate) which is super frustrating. It typically works when I refresh but I can automate that without refreshing the page so I should do that. (I should also add automatic reconnection logic in case the connection drops.)
