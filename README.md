@@ -28,6 +28,10 @@ Nostr makes a lot of stuff that used to need a server not need one anymore. Or a
 
 Just visit this link: https://supertestnet.github.io/superstore
 
+There is no setup process for the store itself, you just immediately start adding products. When you're done you'll get a shareable link where anyone can view your store and a private link where you can manage your store and access your money.
+
+Important! Save your private link. It contains your private key which you'll need to access your money and manage your store. If you lose your private key you lose your money. Keep it secret, keep it safe!
+
 # What are some upcoming features?
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
