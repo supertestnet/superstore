@@ -479,7 +479,7 @@
         var original_pubkey = pubKey;
         pubKey      = pubKey.substring( 2 );
         // console.log( pubKey );
-        var relay = "wss://offchain.pub";
+        if ( $_GET[ "relay" ] ) var relay = $_GET[ "relay" ]; else var relay = "wss://offchain.pub";
         var socket = new WebSocket( relay );
         async function handleMessage( message ) {
             var [ type, subId, event ] = JSON.parse( message.data );
@@ -778,7 +778,13 @@
             socket.send(JSON.stringify([ "EVENT", signedEvent ]));
             if ( window.location.href.indexOf( "?" ) > -1 ) var url = window.location.href.substring( 0, window.location.href.indexOf( "?" ) ); else var url = window.location.href;
             sessionStorage.removeItem( "modal_cleared" );
-            var content = `<p><a href="${url}?pubkey=${original_pubkey}" target="_blank">Click here</a> to share your store</p><p><a href="${url}?privkey=${privKey}" target="_blank">Click here</a> to manage your store and withdraw your earnings</p>`;
+            var shareable = `${url}?pubkey=${original_pubkey}`;
+            var private = `${url}?privkey=${privKey}`;
+            if ( $_GET[ "relay" ] ) {
+            	shareable += `&relay=${$_GET[ "relay" ]}`;
+            	private += `&relay=${$_GET[ "relay" ]}`;
+            }
+            var content = `<p><a href="${shareable}" target="_blank">Click here</a> to share your store</p><p><a href="${private}" target="_blank">Click here</a> to manage your store and withdraw your earnings</p>`;
             showModal( content, true );
             await getNote( "modal_cleared" );
             //alert( "Here is your sharable store url:\n\n" + url + "?pubkey=" + original_pubkey +
