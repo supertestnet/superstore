@@ -51,7 +51,6 @@
         }
         .plus_and_minus {
             margin-left: .2rem;
-            width: 1.5rem;
         }
         .view_store, .blank_view {
             display: none;
@@ -61,6 +60,33 @@
             background-color: tan;
             text-align: right;
             margin-bottom: 1rem;
+        }
+        .black-bg {
+            display: none;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: black;
+            opacity: .5;
+            width: 100vw;
+            height: 100vh;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            box-sizing: border-box;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+            width: 100%;
+            max-width: 560px;
+            background-color: white;
+            border-radius: 1rem;
+            padding: 20px;
+            color: black;
+            text-align: center;
+            word-wrap: break-word;
         }
         @media screen and (max-width: 600px) {
             .product input, .product select, .product textarea {
@@ -402,6 +428,37 @@
             var array = [ fees["minimumFee"], fees["hourFee"], fees["fastestFee"] ];
             return array;
         }
+        function modalVanish() {
+            $( ".black-bg" ).style.display = "none";
+            $( ".modal" ).style.display = "none";
+        }
+        function showModal( content, block_til_clear ) {
+        	if ( block_til_clear ) var fn = `modalVanish();sessionStorage[ 'modal_cleared' ] = true;`; else var fn = `modalVanish();`;
+            $( ".modal" ).innerHTML = `<div style="position: absolute;right: 1rem;top: 0.5rem;font-size: 2rem; cursor: pointer;" onclick="${fn}">&times;</div>`;
+            $( ".modal" ).innerHTML += `<div style="overflow-y: scroll; max-height: 80vh; margin-top: 1.5rem;">${content}</div>`;
+            $( ".black-bg" ).style.display = "block";
+            $( ".modal" ).style.display = "block";
+        }
+        async function getNote( item ) {
+            async function isNoteSetYet( note_i_seek ) {
+                return new Promise( function( resolve, reject ) {
+                    if ( !note_i_seek ) {
+                        setTimeout( async function() {
+                            var msg = await isNoteSetYet( sessionStorage[ item ] );
+                            resolve( msg );
+                        }, 100 );
+                    } else {
+                        resolve( note_i_seek );
+                    }
+                });
+            }
+            async function getTimeoutData() {
+                var note_i_seek = await isNoteSetYet( sessionStorage[ item ] );
+                return note_i_seek;
+            }
+            var returnable = await getTimeoutData();
+            return returnable;
+        }
     </script>
     <script>
         var private_keys = [];
@@ -591,7 +648,7 @@
             <div class="manage_sales_toolbar"></div>
             <h2>Add products</h2>
             <div class="product">
-                <input placeholder="product name"><input placeholder="image url"><textarea placeholder="description" class="desc"></textarea><select placeholder="shipping zone"><option>--- Shipping zone ---</option><option>Free (digital)</option><option>Worldwide</option><option>Europe</option><option>Australia</option><option>Austria</option><option>Belgium</option><option>Brazil</option><option>Canada</option><option>Denmark</option><option>Finland</option><option>France</option><option>Germany</option><option>Greece</option><option>Hong Kong</option><option>Hungary</option><option>Ireland</option><option>Indonesia</option><option>Israel</option><option>Italy</option><option>Japan</option><option>Kazakhstan</option><option>Korea</option><option>Luxembourg</option><option>Malaysia</option><option>Mexico</option><option>Netherlands</option><option>New Zealand</option><option>Norway</option><option>Poland</option><option>Portugal</option><option>Russia</option><option>Saudi Arabia</option><option>Singapore</option><option>Spain</option><option>Sweden</option><option>Switzerland</option><option>Thailand</option><option>Turkey</option><option>Ukraine</option><option>United Kingdom</option><option>United States</option><option>Vietnam</option><option>China</option></select><input placeholder="usd price (e.g. 5.99)" class="price" type="number" step="0.01" min="0"><button class="plus_and_minus">+</button><button class="preview">Product preview</button>
+                <input placeholder="product name"><input placeholder="image url"><textarea placeholder="description" class="desc"></textarea><select placeholder="shipping zone"><option>--- Shipping zone ---</option><option>Free (digital)</option><option>Worldwide</option><option>Europe</option><option>Australia</option><option>Austria</option><option>Belgium</option><option>Brazil</option><option>Canada</option><option>Denmark</option><option>Finland</option><option>France</option><option>Germany</option><option>Greece</option><option>Hong Kong</option><option>Hungary</option><option>Ireland</option><option>Indonesia</option><option>Israel</option><option>Italy</option><option>Japan</option><option>Kazakhstan</option><option>Korea</option><option>Luxembourg</option><option>Malaysia</option><option>Mexico</option><option>Netherlands</option><option>New Zealand</option><option>Norway</option><option>Poland</option><option>Portugal</option><option>Russia</option><option>Saudi Arabia</option><option>Singapore</option><option>Spain</option><option>Sweden</option><option>Switzerland</option><option>Thailand</option><option>Turkey</option><option>Ukraine</option><option>United Kingdom</option><option>United States</option><option>Vietnam</option><option>China</option></select><input placeholder="usd price (e.g. 5.99)" class="price" type="number" step="0.01" min="0"><button class="preview">Product preview</button><button class="plus_and_minus">Add another product</button>
             </div>
         </div>
         <p><button class="store_maker">Submit</button></p>
@@ -623,12 +680,6 @@
             var product = document.createElement( "div" );
             product.className = "product";
             product.innerHTML = `<input placeholder="product name"><input placeholder="image url"><textarea placeholder="description" class="desc"></textarea><select placeholder="shipping zone"><option>--- Shipping zone ---</option><option>Free (digital)</option><option>Worldwide</option><option>Europe</option><option>Australia</option><option>Austria</option><option>Belgium</option><option>Brazil</option><option>Canada</option><option>Denmark</option><option>Finland</option><option>France</option><option>Germany</option><option>Greece</option><option>Hong Kong</option><option>Hungary</option><option>Ireland</option><option>Indonesia</option><option>Israel</option><option>Italy</option><option>Japan</option><option>Kazakhstan</option><option>Korea</option><option>Luxembourg</option><option>Malaysia</option><option>Mexico</option><option>Netherlands</option><option>New Zealand</option><option>Norway</option><option>Poland</option><option>Portugal</option><option>Russia</option><option>Saudi Arabia</option><option>Singapore</option><option>Spain</option><option>Sweden</option><option>Switzerland</option><option>Thailand</option><option>Turkey</option><option>Ukraine</option><option>United Kingdom</option><option>United States</option><option>Vietnam</option><option>China</option></select><input placeholder="usd price (e.g. 5.99)" class="price" type="number" step="0.01" min="0">`;
-            //append an input and a minus button
-            var button = document.createElement( "button" );
-            button.className = "plus_and_minus";
-            button.innerText = "-";
-            button.onclick = () => button.parentElement.remove();
-            product.append( button );
             var button = document.createElement( "button" );
             button.innerText = "Product preview";
             button.onclick = (e) => {
@@ -644,6 +695,12 @@
                 `;
                 $( '.preview_pane' ).innerHTML = html;
             }
+            product.append( button );
+            //append an input and a minus button
+            var button = document.createElement( "button" );
+            button.className = "plus_and_minus";
+            button.innerText = "Remove this product";
+            button.onclick = () => button.parentElement.remove();
             product.append( button );
             $( '.products' ).insertBefore( product, $( '.products' ).lastElementChild );
             $$( '.price' ).forEach( function( item, index ) {
@@ -715,8 +772,11 @@
             console.log( "signed store event:", signedEvent );
             socket.send(JSON.stringify([ "EVENT", signedEvent ]));
             if ( window.location.href.indexOf( "?" ) > -1 ) var url = window.location.href.substring( 0, window.location.href.indexOf( "?" ) ); else var url = window.location.href;
-            alert( "Here is your sharable store url:\n\n" + url + "?pubkey=" + original_pubkey +
-                "\n\nHere is your private management url:\n\n" + url + "?privkey=" + privKey );
+            var content = `<p>Here is your sharable store url:</p><p>${url}?pubkey=${original_pubkey}</p><p>Here is your private management url:</p><p>${url}?privkey=${privKey}</p>`;
+            showModal( content, true );
+            await getNote( "modal_cleared" );
+            //alert( "Here is your sharable store url:\n\n" + url + "?pubkey=" + original_pubkey +
+            // "\n\nHere is your private management url:\n\n" + url + "?privkey=" + privKey );
             window.location.href = url + "?privkey=" + privKey;
         }
         var renderCart = () => {
@@ -928,5 +988,7 @@
         }
         init();
     </script>
+    <div class="black-bg"></div>
+    <div class="modal"></div>
 </body>
 </html>
