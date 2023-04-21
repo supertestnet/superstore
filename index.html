@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <script src="https://bitcoincore.tech/apps/bitcoinjs-ui/lib/bitcoinjs-lib.js"></script>
+    <script src="https://supertestnet.github.io/bitcoin-chess/js/qrcode.js"></script>
+    <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
+    <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
+    <script src="https://bundle.run/buffer@6.0.3"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-size: 1.15rem;
+            font-family: Arial, sans-serif;
+        }
+        html {
+            max-width: 70ch;
+            padding: 3rem 1rem;
+            margin: auto;
+            line-height: 1.25;
+        }
+        h1 {
+            font-size: 2rem;
+        }
+        h2 {
+            font-size: 1.5rem;
+        }
+        input, textarea {
+            line-height: 1.25;
+            width: calc( 100% - 2rem );
+            height: 1.8rem;
+            font-size: 1.15rem;
+            border: 1px solid grey;
+            margin-bottom: 1rem;
+        }
+        .product {
+            border: 1px solid black;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .product input, .product select, .product textarea {
+            width: calc( 50% - 2rem );
+            margin-left: .2rem;
+            margin-bottom: 1rem;
+        }
+        .product .desc {
+            width: calc( 100% - 3.8rem );
+            height: 5rem;
+        }
+        .plus_and_minus {
+            margin-left: .2rem;
+            width: 1.5rem;
+        }
+        .view_store, .blank_view {
+            display: none;
+        }
+        .minicart {
+            padding: 0.5rem;
+            background-color: tan;
+            text-align: right;
+            margin-bottom: 1rem;
+        }
+        @media screen and (max-width: 600px) {
+            .product input, .product select, .product textarea {
+                width: calc( 100% - 2rem );
+            }
+            .product .desc {
+                width: calc( 100% - 2rem );
+            }
+        }
+    </style>
+    <script>
+        var $ = document.querySelector.bind( document );
+        var $$ = document.querySelectorAll.bind( document );
+        var url_params = new URLSearchParams( window.location.search );
+        var url_keys = url_params.keys();
+        var $_GET = {}
+        for ( var key of url_keys ) $_GET[ key ] = url_params.get( key );
+        var mempoolNetwork = "";
+    	if ( $_GET[ "network" ] == "testnet" ) mempoolNetwork = $_GET[ "network" ] + "/";
+    </script>
+    <script>
+        function makeSmallPrivkey() {
+            var privkey = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" );
+            if ( privkey.substring( 0, 1 ) != "0" || privkey.substring( 1, 2 ) != "0" ) {
+                    return makeSmallPrivkey()
+            }
+            return privkey;
+        }
+        function getCompressedPubkeyHexFromPrivkeyHex( privkeyhex ) {
+            return nobleSecp256k1.getPublicKey( privkeyhex, true );
+        }
+        function waitSomeSeconds( num ) {
+            var num = num.toString() + "000";
+            num = Number( num );
+            return new Promise( resolve => setTimeout( resolve, num ) );
+        }
+        function hexToBytes( hex ) {
+            return Uint8Array.from( hex.match( /.{1,2}/g ).map( ( byte ) => parseInt( byte, 16 ) ) );
+        }
+        function bytesToHex( bytes ) {
+            return bytes.reduce( ( str, byte ) => str + byte.toString( 16 ).padStart( 2, "0" ), "" );
+        }
+        function getData( url ) {
+            return new Promise( async function( resolve, reject ) {
+                function inner_get( url ) {
+                    var xhttp = new XMLHttpRequest();
+                    xhttp.open( "GET", url, true );
+                    xhttp.send();
+                    return xhttp;
+                }
+                var data = inner_get( url );
+                data.onerror = function( e ) {
+                    resolve( "error" );
+                }
+                async function isResponseReady() {
+                    return new Promise( function( resolve2, reject ) {
+                        if ( !data.responseText || data.readyState != 4 ) {
+                            setTimeout( async function() {
+                                var msg = await isResponseReady();
+                                resolve2( msg );
+                            }, 1 );
+                        } else {
+                            resolve2( data.responseText );
+                        }
+                    });
+                }
+                var returnable = await isResponseReady();
+                resolve( returnable );
+            });
+        }
+        async function postData( url, json, content_type = "", apikey = "" ) {
+            var rtext = "";
+            function inner_post( url, json, content_type = "", apikey = "" ) {
+                var xhttp = new XMLHttpRequest();
+                xhttp.open( "POST", url, true );
+                if ( content_type ) {
+                    xhttp.setRequestHeader( `Content-Type`, content_type );
+                }
+                if ( apikey ) {
+                    xhttp.setRequestHeader( `X-Api-Key`, apikey );
+                }
+                xhttp.send( json );
+                return xhttp;
+            }
+            var data = inner_post( url, json, content_type, apikey );
+            data.onerror = function( e ) {
+                rtext = "error";
+            }
+            async function isResponseReady() {
+                return new Promise( function( resolve, reject ) {
+                    if ( rtext == "error" ) {
+                        resolve( rtext );
+                    }
+                    if ( !data.responseText || data.readyState != 4 ) {
+                        setTimeout( async function() {
+                            var msg = await isResponseReady();
+                            resolve( msg );
+                        }, 50 );
+                    } else {
+                        resolve( data.responseText );
+                    }
+                });
+            }
+            var returnable = await isResponseReady();
+            return returnable;
+        }
+        async function pushBTCpmt( rawtx, network ) {
+            var txid = await postData( "https://mempool.space/" + network + "api/tx", rawtx );
+            return txid;
+        }
+        async function getBitcoinPriceFromCoinbase() {
+            var data = await getData( "https://api.coinbase.com/v2/prices/BTC-USD/spot" );
+            if ( data == "error" ) return 0;
+            var json = JSON.parse( data );
+            var price = json[ "data" ][ "amount" ];
+            return price;
+        }
+
+        async function getBitcoinPriceFromKraken() {
+            var data = await getData( "https://api.kraken.com/0/public/Ticker?pair=XBTUSD" );
+            if ( data == "error" ) return 0;
+            var json = JSON.parse( data );
+            var price = json[ "result" ][ "XXBTZUSD" ][ "a" ][ 0 ];
+            return price;
+        }
+
+        async function getBitcoinPriceFromCoindesk() {
+            var data = await getData( "https://api.coindesk.com/v1/bpi/currentprice.json" );
+            if ( data == "error" ) return 0;
+            var json = JSON.parse( data );
+            var price = json[ "bpi" ][ "USD" ][ "rate_float" ];
+            return price;
+        }
+
+        async function getBitcoinPriceFromGemini() {
+            var data = await getData( "https://api.gemini.com/v2/ticker/BTCUSD" );
+            if ( data == "error" ) return 0;
+            var json = JSON.parse( data );
+            var price = json[ "bid" ];
+            return price;
+        }
+
+        async function getBitcoinPriceFromBybit() {
+            var data = await getData( "https://api-testnet.bybit.com/derivatives/v3/public/order-book/L2?category=linear&symbol=BTCUSDT" );
+            if ( data == "error" ) return 0;
+            var json = JSON.parse( data );
+            var price = json[ "result" ][ "b" ][ 0 ][ 0 ];
+            return price;
+        }
+
+        async function getBitcoinPrice() {
+            var prices = [];
+            var cbprice = await getBitcoinPriceFromCoinbase();
+            var kprice = await getBitcoinPriceFromKraken();
+            var cdprice = await getBitcoinPriceFromCoindesk();
+            var gprice = await getBitcoinPriceFromGemini();
+            var bprice = await getBitcoinPriceFromBybit();
+            prices.push( Number( cbprice ), Number( kprice ), Number( cdprice ), Number( gprice ), Number( bprice ) );
+            prices.sort();
+            console.log( prices );
+            return prices[ 2 ];
+        }
+
+        function dollarsToSats( dollars ) {
+            dollars = Number( dollars );
+            var btc_price = sessionStorage[ "btc_price" ];
+            return Math.floor( Number( ( dollars / btc_price ).toFixed( 8 ) ) * 100000000 );
+        }
+
+        function satsToDollars( sats ) {
+            if ( sats >= 100000000 ) sats = sats * 10;
+            var bitcoin_price = sessionStorage[ "btc_price" ];
+            var value_in_dollars = Number( String( sats ).padStart( 8, "0" ).slice( 0,-9 ) + "." + String( sats ).padStart( 8, "0" ).slice( -9 ) ) * bitcoin_price;
+            return value_in_dollars;
+        }
+
+        function createQR( content ) {
+            var dataUriPngImage = document.createElement( "img" ),
+            s = QRCode.generatePNG( content, {
+                ecclevel: "M",
+                format: "html",
+                fillcolor: "#FFFFFF",
+                textcolor: "#000000",
+                margin: 4,
+                modulesize: 8,
+            });
+            dataUriPngImage.src = s;
+            dataUriPngImage.id = "qr_code";
+            return dataUriPngImage;
+        }
+
+        async function loopTilAddressReceivesMoney(address, network) {
+            let itReceivedMoney = false;
+            async function isDataSetYet(data_i_seek) {
+                return new Promise(function (resolve, reject) {
+                    if (!data_i_seek) {
+                        setTimeout(async function () {
+                            console.log("waiting for address to receive money...");
+                            try {
+                                itReceivedMoney = await addressOnceHadMoney(address, network);
+                            }catch(e){ }
+                            let msg = await isDataSetYet(itReceivedMoney);
+                            resolve(msg);
+                        }, 2000);
+                    } else {
+                        resolve(data_i_seek);
+                    }
+                });
+            }
+
+            async function getTimeoutData() {
+                let data_i_seek = await isDataSetYet(itReceivedMoney);
+                return data_i_seek;
+            }
+
+            let returnable = await getTimeoutData();
+            return returnable;
+        }
+
+        async function addressOnceHadMoney( address, network ) {
+            var nonjson = await getData( "https://mempool.space/" + network + "api/address/" + address );
+            var json = JSON.parse( nonjson );
+            if ( json[ "chain_stats" ][ "tx_count" ] > 0 || json[ "mempool_stats" ][ "tx_count" ] > 0 ) {
+                return true;
+            }
+            return false;
+        }
+
+        async function addressReceivedMoneyInThisTx(address, network) {
+            let txid;
+            let vout;
+            let amt;
+            let nonjson = await getData("https://mempool.space/" + network + "api/address/" + address + "/txs");
+            let json = JSON.parse(nonjson);
+            json.forEach(function (tx) {
+                tx["vout"].forEach(function (output, index) {
+                    if (output["scriptpubkey_address"] == address) {
+                        txid = tx["txid"];
+                        vout = index;
+                        amt = output["value"];
+                    }
+                });
+            });
+            return [txid, vout, amt];
+        }
+
+        function isValidJson( content ) {
+            if ( !content ) return;
+            try {  
+                var json = JSON.parse( content );
+            } catch ( e ) {
+                return;
+            }
+            return true;
+        }
+
+        function add2Pubkeys( pubkey1, pubkey2 ) {
+            return nobleSecp256k1.Point.fromHex( pubkey1 ).add( nobleSecp256k1.Point.fromHex( pubkey2 ) ).toHex();
+        }
+
+        function getCompressedPubkeyHexFromUncompressedPubkeyHex( pubkeyhex ) {
+            return bitcoinjs.ECPair.fromPublicKey( buffer.Buffer.from( pubkeyhex, "hex" ) ).publicKey.toString( "hex" );
+        }
+
+        function getNativeSegwitAddressFromPubkeyHex( pubkeyhex, network ) {
+        	if ( !network ) network = bitcoinjs.networks.mainnet; else network = bitcoinjs.networks.testnet;
+            return bitcoinjs.payments.p2wpkh({ pubkey: buffer.Buffer.from( pubkeyhex, "hex" ), network: network }).address;
+        }
+
+        async function getAddressBalance( address, network ) {
+            var nonjson = await getData( "https://mempool.space/" + network + "api/address/" + address );
+            var json = JSON.parse( nonjson );
+            var fullincome = json[ "chain_stats" ][ "funded_txo_sum" ] + json[ "mempool_stats" ][ "funded_txo_sum" ];
+            var fulloutgo = json[ "chain_stats" ][ "spent_txo_sum" ] + json[ "mempool_stats" ][ "spent_txo_sum" ];
+            return fullincome - fulloutgo;
+        }
+        function addKeys( privkey1, privkey2 ) {
+            var combokey = ( ( BigInt( "0x" + privkey1 ) + BigInt( "0x" + privkey2 ) ) % BigInt( "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f" ) ).toString( 16 );
+            combokey = ( "00" + combokey ).slice( -64 );
+            return combokey;
+        }
+        async function getUTXOs( privkey, network ) {
+            var pubkey = getCompressedPubkeyHexFromPrivkeyHex( privkey );
+            var address = getNativeSegwitAddressFromPubkeyHex( pubkey, network );
+            var esplorautxos = await getData( "https://blockstream.info/" + network + "api/address/" + address + "/utxo" );
+            esplorautxos = JSON.parse( esplorautxos );
+            var obj = [];
+            esplorautxos.forEach( function( item, index ) {
+                var utxo = {}
+                utxo[ "tx_id" ] = item[ "txid" ];
+                utxo[ "output_number" ] = item[ "vout" ];
+                utxo[ "amount" ] = item[ "value" ];
+                utxo[ "privkey" ] = privkey;
+                utxo[ "pubkey" ] = pubkey;
+                obj.push( utxo );
+            });
+            return( obj );
+        }
+        function craftTransaction( selected_utxos, to_amount, to_address, network ) {
+        	if ( !network ) network = bitcoinjs.networks.mainnet; else network = bitcoinjs.networks.testnet;
+            if ( !to_amount ) {
+                return;
+            }
+            var psbt = new bitcoinjs.Psbt({ network: network });
+            var i; for ( i=0; i<selected_utxos.length; i++ ) {
+                psbt.addInput({
+                    hash: selected_utxos[ i ][ "tx_id" ],
+                    index: selected_utxos[ i ][ "output_number" ],
+                    witnessUtxo: {
+                        script: buffer.Buffer.from( '0014' + bitcoinjs.crypto.ripemd160( bitcoinjs.crypto.sha256( buffer.Buffer.from( selected_utxos[ i ][ "pubkey" ], "hex" ) ) ).toString( 'hex' ), 'hex' ),
+                        value: selected_utxos[ i ][ "amount" ],
+                    },
+                });
+            }
+            psbt.addOutput({
+                address: to_address,
+                value: to_amount,
+            });
+            var keyPairSenders = [];
+            var i; for ( i=0; i<selected_utxos.length; i++ ) {
+                keyPairSenders.push( bitcoinjs.ECPair.fromPrivateKey( buffer.Buffer.from( selected_utxos[ i ][ "privkey" ], "hex" ), network ) );
+            }
+            var i; for ( i=0; i<keyPairSenders.length; i++ ) {
+                psbt.signInput( i, keyPairSenders[ i ] );
+            }
+            var i; for ( i=0; i<keyPairSenders.length; i++ ) {
+                psbt.validateSignaturesOfInput( i );
+            }
+            psbt.finalizeAllInputs();
+            return psbt.extractTransaction().toHex();
+        }
+        async function getThreeFeeRates( network ) {
+            var fees = await getData("https://mempool.space/" + network + "api/v1/fees/recommended");
+            fees = JSON.parse(fees);
+            var array = [ fees["minimumFee"], fees["hourFee"], fees["fastestFee"] ];
+            return array;
+        }
+    </script>
+    <script>
+        var private_keys = [];
+        var available_utxos = [];
+        if ( localStorage[ "shipped_orders" ] ) var shipped_orders = JSON.parse( localStorage[ "shipped_orders" ] ); else var shipped_orders = [];
+        sessionStorage.clear();
+        var sales = [];
+        var { getSharedSecret, schnorr, utils } = nobleSecp256k1;
+        var crypto  = window.crypto;
+        var getRand = size => crypto.getRandomValues(new Uint8Array(size));
+        var sha256  = bitcoinjs.crypto.sha256;
+        if ( $_GET[ "privkey" ] ) var privKey = $_GET[ "privkey" ]; else var privKey = makeSmallPrivkey();
+        var pubKey  = getCompressedPubkeyHexFromPrivkeyHex( privKey );
+        var original_pubkey = pubKey;
+        pubKey      = pubKey.substring( 2 );
+        // console.log( pubKey );
+        var relay = "wss://relay.taxi";
+        var socket = new WebSocket( relay );
+        socket.addEventListener('message', async function( message ) {
+            var [ type, subId, event ] = JSON.parse( message.data );
+            var { kind, content } = event || {}
+            if (!event || event === true) return;
+            // console.log('message:', event);
+            if ( kind === 4 ) {
+                content = await decrypt(privKey, event.pubkey, content);
+                if ( !isValidJson( content ) ) return;
+                content = JSON.parse( content );
+                if ( content.length != 2 ) return;
+                if ( !content[ 0 ] ) return;
+                if ( !content[ 1 ] ) return;
+                if ( typeof content[ 0 ] != "object" ) return;
+                if ( typeof content[ 1 ] != "object" ) return;
+                if ( !content[ 0 ][ "whisper_key" ] ) return;
+                if ( !content[ 1 ][ 0 ] ) return;
+                if ( typeof content[ 1 ][ 0 ] != "object" ) return;
+                if ( !content[ 1 ][ 0 ][ "item" ] ) return;
+                if ( !content[ 1 ][ 0 ][ "price" ] ) return;
+                sales.push( [ ...content, event.id, 0 ] );
+                if ( !shipped_orders.includes( event.id ) ) $( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) + 1;
+            }
+            // console.log('content:', content);
+            if ( kind === 12196 ) {
+                var array = event.tags[ 0 ];
+                array.splice( 0, 1 );
+                // console.log( array );
+                var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
+                var filter  = { ids: array }
+                var subscription = [ "REQ", subId, filter ];
+                socket.send(JSON.stringify( subscription ));
+            }
+            if ( kind === 42196 ) {
+                var content = JSON.parse( content );
+                if ( $_GET[ "privkey" ] ) {
+                    if ( $( '.products' ).children.length > 3 ) $$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
+                    $( '.product' ).children[ 0 ].value = content.product;
+                    $( '.product' ).children[ 1 ].value = content.image;
+                    $( '.product' ).children[ 2 ].value = content.description;
+                    $( '.product' ).children[ 3 ].value = content.shipping_zone;
+                    $( '.product' ).children[ 4 ].value = ( content.price / 100 ).toFixed( 2 );
+                    return;
+                }
+                // console.log( content );
+                var price = content[ "price" ] / 100;
+                //todo: xss
+                var html = `
+                    <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word;">
+                        <img src="${content.image}" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
+                        <div class="product_name">${content.product}</div>
+                        <div>$<span class="product_price">${price.toFixed( 2 )}</span></div>
+                        <div style="display: none;" class="shipping_zone">${content.shipping_zone}</span></div>
+                        <button class="view_product_btn">View product</button>
+                        <button class="add_to_cart">Add to cart</button>
+                    </div>
+                `;
+                $( '.store_products' ).innerHTML += ( html );
+                $$( '.add_to_cart' ).forEach( function( item ) {
+                    item.onclick = (e) => {
+                        $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
+                        cart.push({
+                            item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
+                            price: Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText ) * 100,
+                            shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,
+                        });
+                    }
+                });
+                $$( '.view_product_btn' ).forEach( function( item ) {
+                    item.onclick = (e) => {
+                        $( '.store_products' ).style.display = "none";
+                        //todo: stop xss
+                        $( '.blank_view' ).innerHTML = `
+                            <div>
+                                <div style="font-weight: bold; font-size: 3rem; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.store_products' ).style.display = 'flex';">⇦ <span style="vertical-align: middle; font-size: 1.5rem;">Back</span></div>
+                                <div style="font-weight: bold;">Product</div>
+                                <div><span class="product_name">${content.product}</span><br><br></div>
+                                <img src="${content.image}" style="border: 1px solid black; width: 100%; margin: auto;"><br><br>
+                                <div style="font-weight: bold;">Price</div>
+                                <div>$<span class="product_price">${( content.price / 100 ).toFixed( 2 )}</span><br><br></div>
+                                <div style="font-weight: bold;">Description</div>
+                                <div>${content.description}<br><br></div>
+                                <div style="font-weight: bold;">Ships to</div>
+                                <div>${content.shipping_zone}<br><br></div>
+                                <button class="add_to_cart">Add to cart</button>
+                            </div>
+                        `;
+                        $( '.blank_view' ).style.display = "block";
+                        $$( '.add_to_cart' ).forEach( function( item ) {
+                            item.onclick = (e) => {
+                                $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
+                                cart.push({
+                                    item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
+                                    price: Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText ) * 100,
+                                });
+                                $( '.blank_view' ).style.display = "none";
+                                $( '.store_products' ).style.display = "flex";
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        async function getSignedEvent(event, privateKey) {
+            var eventData = JSON.stringify([
+                0,                    // Reserved for future use
+                event['pubkey'],        // The sender's public key
+                event['created_at'],    // Unix timestamp
+                event['kind'],        // Message “kind” or type
+                event['tags'],        // Tags identify replies/recipients
+                event['content']        // Your note contents
+            ])
+            event.id  = sha256( eventData ).toString( 'hex' );
+            event.sig = await schnorr.sign( event.id, privateKey );
+            return event;
+        }
+        function hexToBytes( hex ) {
+            return Uint8Array.from( hex.match( /.{1,2}/g ).map( ( byte ) => parseInt( byte, 16 ) ) );
+        }
+
+        function bytesToHex( bytes ) {
+            return bytes.reduce( ( str, byte ) => str + byte.toString( 16 ).padStart( 2, '0' ), '' );
+        }
+        function base64ToHex( str ) {
+            var raw = atob( str );
+            var result = '';
+            var i; for ( i=0; i<raw.length; i++ ) {
+                var hex = raw.charCodeAt( i ).toString( 16 );
+                result += ( hex.length === 2 ? hex : '0' + hex );
+            }
+            return result;
+        }
+        function encrypt( privkey, pubkey, text ) {
+            var key = nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 );
+            var iv = window.crypto.getRandomValues(new Uint8Array(16));
+            var cipher = browserifyCipher.createCipheriv( 'aes-256-cbc', hexToBytes( key ), iv );
+            var encryptedMessage = cipher.update(text,"utf8","base64");
+            emsg = encryptedMessage + cipher.final( "base64" );
+            var uint8View = new Uint8Array( iv.buffer );
+            var decoder = new TextDecoder();
+            return emsg + "?iv=" + btoa( String.fromCharCode.apply( null, uint8View ) );
+        }
+        function decrypt( privkey, pubkey, ciphertext ) {
+            var [ emsg, iv ] = ciphertext.split( "?iv=" );
+            var key = nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 );
+            var decipher = browserifyCipher.createDecipheriv(
+                'aes-256-cbc',
+                hexToBytes( key ),
+                hexToBytes( base64ToHex( iv ) )
+            );
+            var decryptedMessage = decipher.update( emsg, "base64" );
+            dmsg = decryptedMessage + decipher.final( "utf8" );
+            return dmsg;
+        }
+    </script>
+</head>
+<body>
+    <h1>Welcome to the simple nostr webstore</h1>
+    <div class="make_store">
+        <div class="products">
+            <div class="manage_sales_toolbar"></div>
+            <h2>Add products</h2>
+            <div class="product">
+                <input placeholder="product name"><input placeholder="image url"><textarea placeholder="description" class="desc"></textarea><select placeholder="shipping zone"><option>--- Shipping zone ---</option><option>Free (digital)</option><option>Worldwide</option><option>Europe</option><option>Australia</option><option>Austria</option><option>Belgium</option><option>Brazil</option><option>Canada</option><option>Denmark</option><option>Finland</option><option>France</option><option>Germany</option><option>Greece</option><option>Hong Kong</option><option>Hungary</option><option>Ireland</option><option>Indonesia</option><option>Israel</option><option>Italy</option><option>Japan</option><option>Kazakhstan</option><option>Korea</option><option>Luxembourg</option><option>Malaysia</option><option>Mexico</option><option>Netherlands</option><option>New Zealand</option><option>Norway</option><option>Poland</option><option>Portugal</option><option>Russia</option><option>Saudi Arabia</option><option>Singapore</option><option>Spain</option><option>Sweden</option><option>Switzerland</option><option>Thailand</option><option>Turkey</option><option>Ukraine</option><option>United Kingdom</option><option>United States</option><option>Vietnam</option><option>China</option></select><input placeholder="usd price (e.g. 5.99)" class="price" type="number" step="0.01" min="0"><button class="plus_and_minus">+</button><button class="preview">Product preview</button>
+            </div>
+        </div>
+        <p><button class="store_maker">Submit</button></p>
+        <div class="preview_pane"></div>
+    </div>
+    <div class="view_store">
+        <div class="minicart">Cart (<span class="minicart_item_count">0</span> items) <button class="view_cart">View cart</button></div>
+        <div class="store_products" style="display: flex; justify-content: space-around; align-items: center;"></div>
+    </div>
+    <div class="blank_view"></div>
+    <script>
+        var cart = [];
+        $$( '.price' ).forEach( function( item, index ) {
+            $$( '.price' )[ index ].value = "";
+            item.onkeyup = ( e ) => {
+                if ( e.key === "$" ) {
+                    alert( "Error, please do not include a dollar sign. Just type 5.00 or similar." );
+                    $$( '.price' )[ index ].blur();
+                    $$( '.price' )[ index ].value = "";
+                    return;
+                }
+            }
+            item.onchange = () => {
+                $$( '.price' )[ index ].value = Number( $$( '.price' )[ index ].value ).toFixed(2);
+                if ( $$( '.price' )[ index ].value == "0.00" || $$( '.price' )[ index ].value == "0" ) $$( '.price' )[ index ].value = "";
+            }
+        });
+        $( '.plus_and_minus' ).onclick = () => {
+            var product = document.createElement( "div" );
+            product.className = "product";
+            product.innerHTML = `<input placeholder="product name"><input placeholder="image url"><textarea placeholder="description" class="desc"></textarea><select placeholder="shipping zone"><option>--- Shipping zone ---</option><option>Free (digital)</option><option>Worldwide</option><option>Europe</option><option>Australia</option><option>Austria</option><option>Belgium</option><option>Brazil</option><option>Canada</option><option>Denmark</option><option>Finland</option><option>France</option><option>Germany</option><option>Greece</option><option>Hong Kong</option><option>Hungary</option><option>Ireland</option><option>Indonesia</option><option>Israel</option><option>Italy</option><option>Japan</option><option>Kazakhstan</option><option>Korea</option><option>Luxembourg</option><option>Malaysia</option><option>Mexico</option><option>Netherlands</option><option>New Zealand</option><option>Norway</option><option>Poland</option><option>Portugal</option><option>Russia</option><option>Saudi Arabia</option><option>Singapore</option><option>Spain</option><option>Sweden</option><option>Switzerland</option><option>Thailand</option><option>Turkey</option><option>Ukraine</option><option>United Kingdom</option><option>United States</option><option>Vietnam</option><option>China</option></select><input placeholder="usd price (e.g. 5.99)" class="price" type="number" step="0.01" min="0">`;
+            //append an input and a minus button
+            var button = document.createElement( "button" );
+            button.className = "plus_and_minus";
+            button.innerText = "-";
+            button.onclick = () => button.parentElement.remove();
+            product.append( button );
+            var button = document.createElement( "button" );
+            button.innerText = "Product preview";
+            button.onclick = (e) => {
+                var price = Number( e.target.parentElement.children[ 4 ].value );
+                var html = `
+                    <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word;">
+                        <img src="${e.target.parentElement.children[ 1 ].value}" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
+                        <div>${e.target.parentElement.children[ 0 ].value}</div>
+                        <div>$${price.toFixed( 2 )}</div>
+                        <button>View product</button>
+                        <button class="add_to_cart">Add to cart</button>
+                    </div>
+                `;
+                $( '.preview_pane' ).innerHTML = html;
+            }
+            product.append( button );
+            $( '.products' ).insertBefore( product, $( '.products' ).lastElementChild );
+            $$( '.price' ).forEach( function( item, index ) {
+                item.onchange = () => {
+                    item.onkeyup = ( e ) => {
+                        if ( e.key === "$" ) {
+                            alert( "Error, please do not include a dollar sign. Just type 5.00 or similar." );
+                            $$( '.price' )[ index ].blur();
+                            $$( '.price' )[ index ].value = "";
+                            return;
+                        }
+                    }
+                    $$( '.price' )[ index ].value = Number( $$( '.price' )[ index ].value ).toFixed(2);
+                    if ( $$( '.price' )[ index ].value == "0.00" || $$( '.price' )[ index ].value == "0" ) $$( '.price' )[ index ].value = "";
+                }
+            });
+        }
+        $( '.preview' ).onclick = (e) => {
+            var price = Number( e.target.parentElement.children[ 4 ].value );
+            var html = `
+                <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word;">
+                    <img src="${e.target.parentElement.children[ 1 ].value}" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
+                    <div>${e.target.parentElement.children[ 0 ].value}</div>
+                    <div>$${price.toFixed( 2 )}</div>
+                    <button>View product</button>
+                    <button class="add_to_cart">Add to cart</button>
+                </div>
+            `;
+            $( '.preview_pane' ).innerHTML = html;
+        }
+        $( '.store_maker' ).onclick = async () => {
+            var product_ids = [];
+            var i; for ( i=0; i<$$( '.product' ).length; i++ ) {
+                var array = [...$$( '.product' )[ i ].children];
+                array.pop();
+                array.forEach( ( item, index ) => array[ index ] = item.value);
+                var obj = {
+                    product: array[ 0 ],
+                    image: array[ 1 ],
+                    description: array[ 2 ],
+                    shipping_zone: array[ 3 ],
+                    price: Number( array[ 4 ] * 100 )
+                }
+                var content = JSON.stringify( obj );
+                var event = {
+                    "content"    : content,
+                    "created_at" : Math.floor( Date.now() / 1000 ),
+                    "kind"       : 42196,
+                    "tags"       : [],
+                    "pubkey"     : pubKey,
+                }
+                var signedEvent = await getSignedEvent(event, privKey);
+                console.log( "signed product event:", signedEvent );
+                product_ids.push( signedEvent.id );
+                socket.send(JSON.stringify([ "EVENT", signedEvent ]));
+                await waitSomeSeconds( 1 );
+            }
+            console.log( "product ids:", product_ids );
+            var payment_methods = {}
+            payment_methods[ "whisper_address_linking_key" ] = original_pubkey;
+            var event = {
+                "content"    : JSON.stringify( payment_methods ),
+                "created_at" : Math.floor( Date.now() / 1000 ),
+                "kind"       : 12196,
+                "tags"       : [ [ "products", ...product_ids ] ],
+                "pubkey"     : pubKey,
+            }
+            var signedEvent = await getSignedEvent(event, privKey);
+            console.log( "signed store event:", signedEvent );
+            socket.send(JSON.stringify([ "EVENT", signedEvent ]));
+            if ( window.location.href.indexOf( "?" ) > -1 ) var url = window.location.href.substring( 0, window.location.href.indexOf( "?" ) ); else var url = window.location.href;
+            alert( "Here is your sharable store url:\n\n" + url + "?pubkey=" + original_pubkey +
+                "\n\nHere is your private management url:\n\n" + url + "?privkey=" + privKey );
+        }
+        var renderCart = () => {
+            var total = 0;
+            var items = ``;
+            var requires_edelivery = false;
+            var requires_shipping = false;
+            cart.forEach( function( item ) {
+                if ( item[ "shipping_zone" ] != "Free (digital)" ) requires_shipping = true; else requires_edelivery = true;
+                total = total + item[ "price" ];
+                items += `<div class="minicart" style="display: flex; justify-content: space-between; text-align: left;"><div>${item[ "item" ]}</div><div style="text-align: right;align-self: center;">$${( item[ "price" ] / 100 ).toFixed( 2 )} <span style="border: 1px solid black;border-radius: 50%;width: 1.5rem;height: 1.5rem;display: inline-block;text-align: center; cursor: pointer;" onclick="var child = this.parentElement.parentElement;var parent = child.parentNode;var index = Array.prototype.indexOf.call(parent.children, child);cart.splice( index, 1 );renderCart();$( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) - 1;">&times;</span></div></div>`;
+            });
+            var total_div = `<div class="minicart" style="display: flex; justify-content: space-between; text-align: left;"><div>Total</div><div>$${( total / 100 ).toFixed( 2 )} aka ${dollarsToSats( ( total / 100 ).toFixed( 2 ) )} sats</div></div>`;
+            var edelivery_div = ``;
+            if ( requires_edelivery ) edelivery_div = `<div>Enter instructions for how to deliver your digital good(s) (e.g. email address? telegram handle? Please leave detailed instructions about what you want us to do)</div><textarea class="edelivery_form" style="width: 100%; height: 5rem;"></textarea>`
+            var shipping_div = ``;
+            if ( requires_shipping ) shipping_div = `<div>Enter what you want on your shipping label (and, if desired, a message for the merchant)</div><textarea class="shipping_label_form" style="width: 100%; height: 5rem;"></textarea>`
+            $( '.blank_view' ).innerHTML = `
+                <div>
+                    <div style="font-weight: bold; font-size: 3rem; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.view_store' ).style.display = 'block';">⇦ <span style="vertical-align: middle; font-size: 1.5rem;">Back</span></div>
+                    <h2>Your cart</h2>
+                    <div class="items">${items}</div>
+                    ${total_div}
+                    ${edelivery_div}
+                    ${shipping_div}
+                    <div style="text-align: right;"><button class="checkout">Checkout</button></div>
+                </div>
+            `;
+            $( '.view_store' ).style.display = "none";
+            $( '.blank_view' ).style.display = "block";
+            $( '.checkout' ).onclick = async () => {
+                if ( $( '.shipping_label_form' ) ) sessionStorage.shipping_label_form = $( '.shipping_label_form' ).value;
+                if ( $( '.edelivery_form' ) ) sessionStorage.edelivery_form = $( '.edelivery_form' ).value;
+                $( '.blank_view' ).innerHTML = `
+                    <div style="font-weight: bold; font-size: 3rem; cursor: pointer;" onclick="renderCart();">⇦ <span style="vertical-align: middle; font-size: 1.5rem;">Back</span></div>
+                    <div style="font-weight: bold;">Checkout</div><br>
+                    Please send ${dollarsToSats( ( total / 100 ).toFixed( 2 ) )} sats and wait for your auto-generated proof of payment (your shipment is not guaranteed til you have your proof of payment)
+                    <br>
+                `;
+                $( '.blank_view' ).append( createQR( whisper_address ) );
+                $( '.blank_view' ).append( whisper_address );
+                await loopTilAddressReceivesMoney( whisper_address, mempoolNetwork );
+                await waitSomeSeconds( 2 );
+                var txinfo = await addressReceivedMoneyInThisTx( whisper_address, mempoolNetwork );
+                if ( txinfo[ 2 ] >= dollarsToSats( ( total / 100 ).toFixed( 2 ) ) ) {
+                    alert( `Thank you for your business. Here is your proof of payment: ${whisper_key} -- keep this on you til you recieve your item. If the seller does not send you your item, you can contact him on nostr at ${$_GET[ "pubkey" ].substring( 2 )} and show him your proof of payment.` );
+                    var buyer_info = {}
+                    buyer_info[ "whisper_key" ] = whisper_key;
+                    if ( sessionStorage.edelivery_form ) buyer_info[ "edelivery_info" ] = sessionStorage.edelivery_form;
+                    if ( sessionStorage.shipping_label_form ) buyer_info[ "shipping_info" ] = sessionStorage.shipping_label_form;
+                    var message = JSON.stringify( [ buyer_info, [...cart] ] );
+                    var encrypted = encrypt( privKey, $_GET[ "pubkey" ].substring( 2 ), message );
+                    var event = {
+                        "content"    : encrypted,
+                        "created_at" : Math.floor( Date.now() / 1000 ),
+                        "kind"       : 4,
+                        "tags"       : [ [ 'p', $_GET[ "pubkey" ].substring( 2 ) ] ],
+                        "pubkey"     : pubKey,
+                    }
+                    var signedEvent = await getSignedEvent(event, privKey);
+                    socket.send(JSON.stringify([ "EVENT", signedEvent ]));
+                }
+            }
+        }
+        $( '.view_cart' ).onclick = renderCart;
+    </script>
+    <script>
+        //example image: https://bitcoinscoresby.com/wp-content/uploads/2023/04/Thumbnail-Universal-Mummy-450.jpeg
+        if ( $_GET[ "pubkey" ] ) {
+            //this codeblock creates the whisper address
+            var linking_pubkey = $_GET[ "pubkey" ];
+            var whisper_key = makeSmallPrivkey();
+            var whisper_pubkey = getCompressedPubkeyHexFromPrivkeyHex( whisper_key );
+            var combokey = getCompressedPubkeyHexFromUncompressedPubkeyHex( add2Pubkeys( linking_pubkey, whisper_pubkey ) );
+            var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
+            $( '.make_store' ).style.display = "none";
+            $( '.view_store' ).style.display = "block";
+            socket.addEventListener('open', async function( e ) {
+                console.log( "connected to " + relay );
+                var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
+                var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196 ] }
+                var subscription = [ "REQ", subId, filter ];
+                socket.send(JSON.stringify( subscription ));
+            });
+        }
+        if ( $_GET[ "privkey" ] ) {
+            var html = `<div class="minicart"><span class="sales_count">0</span> new sales <button class="manage_sales_btn">Manage sales</button></div>`;
+            $( '.manage_sales_toolbar' ).innerHTML = html;
+            socket.addEventListener('open', async function( e ) {
+                console.log( "connected to " + relay );
+                var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
+                var filter  = { "#p": [ pubKey ], kinds: [ 4 ] }
+                var filter2  = { authors: [ pubKey ], kinds: [ 12196 ] }
+                var subscription = [ "REQ", subId, filter, filter2 ];
+                socket.send(JSON.stringify( subscription ));
+            });
+            var manageSales = () => {
+                $( '.products' ).style.display = "none";
+                $( '.store_maker' ).parentElement.style.display = "none";
+                $( '.blank_view' ).style.display = "block";
+                $( '.blank_view' ).innerHTML = `
+                    <div>
+                        <div style="font-weight: bold; font-size: 3rem; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.products' ).style.display = 'block';$( '.store_maker' ).parentElement.style.display = 'block';">⇦ <span style="vertical-align: middle; font-size: 1.5rem;">Back</span></div>
+                        <div style="font-weight: bold;">Wallet</div><br>
+                        <div class="wallet" style="display: flex;justify-content: space-between;background-color: orange;padding: 0.5rem;align-items: center;"><div>Balance: $<span class="usd_balance">0.00</span> (<span class="btc_balance">0</span> sats)</div><div><button class="withdraw">Withdraw</button></div></div><br>
+                        <div style="font-weight: bold;">Sales</div><br>
+                        <div class="orders"></div>
+                    </div>
+                `;
+                sales.forEach( async function( sale, index ) {
+                    var whisper_key = sale[ 0 ][ "whisper_key" ];
+                    var privkey = addKeys( privKey, whisper_key );
+                    var combokey = getCompressedPubkeyHexFromPrivkeyHex( privkey );
+                    var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
+                    var address_balance = await getAddressBalance( whisper_address, mempoolNetwork );
+                    var balance_in_dollars = satsToDollars( address_balance ).toFixed( 2 );
+                    if ( shipped_orders.includes( sale[ 2 ] ) ) sale[ 3 ] = 1;
+                    //don't display orders that are not paid for
+                    //but do show them if they only *seem* unpaid for but really are
+                    //because the money was withdrawn before they were shipped
+                    //I detect that (or try to) by checking if the item was shipped
+                    //because if the amount paid is zero *and* the amount was shipped
+                    //then I can be pretty confident the order was paid for (otherwise
+                    //the seller wouldn't mark it shipped) but then they just withdrew
+                    //their money before marking it as shipped
+                    if ( balance_in_dollars == "0.00" && !sale[ 3 ] ) return;
+                    $( '.btc_balance' ).innerText = Number( $( '.btc_balance' ).innerText ) + address_balance;
+                    $( '.usd_balance' ).innerText = satsToDollars( Number( $( '.btc_balance' ).innerText ) ).toFixed( 2 );
+                    if ( !private_keys.includes( privkey ) ) private_keys.push( privkey );
+                    var bgcolor = "pink";
+                    var shipped_instructions = "click when shipped";
+                    if ( sale[ 3 ] ) {
+                        bgcolor = "lightgreen";
+                        shipped_instructions = "shipped";
+                    }
+                    var total = 0;
+                    var items = ``;
+                    sale[ 1 ].forEach( function( item, index ) {
+		                total = total + item[ "price" ];
+		                items += `<div class="minicart" style="display: flex; justify-content: space-between; text-align: left;"><div>${item[ "item" ]}</div><div style="text-align: right;align-self: center;">$${( item[ "price" ] / 100 ).toFixed( 2 )}</div></div>`;
+                    });
+                    var paid_amount = balance_in_dollars;
+                    if ( sale[ 3 ] ) paid_amount = ( total / 100 ).toFixed( 2 );
+                    var order = `
+                        <div class="minicart order" data-id="${sale[ 2 ]}" style="background-color: ${bgcolor}; display: flex; justify-content: space-between; text-align: left;"><div>Ship to:<br>${sale[ 0 ][ "shipping_info" ].replace( /\n/g, "<br>")}</div><div style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );">${shipped_instructions}</button></div></div>
+                        <div style="display: none;border: 1px solid black; border-radius: 1rem; padding: 1rem;"><div style="font-weight: bold;">Details</div><br>${items}<div style="text-align: right;">Total they owed: $${( total / 100 ).toFixed( 2 )}</div><div style="text-align: right;">Total they paid: $${paid_amount}</div></div>
+                    `;
+                    $( '.orders' ).innerHTML += order;
+                });
+                $( '.withdraw' ).onclick = async () => {
+                	var some_unshipped_items = false;
+                	sales.forEach( function( sale ) {
+                	    if ( !sale[ 3 ] ) some_unshipped_items = true;
+                	});
+                	if ( some_unshipped_items ) {
+                	    alert( `You cannot withdraw your money til you ship all your orders.` );
+                	    return;
+                	}
+                    var from_amount = 0;
+                    var i; for ( i=0; i<private_keys.length; i++ ) {
+                        var utxos_in_this_address = await getUTXOs( private_keys[ i ], mempoolNetwork );
+                        utxos_in_this_address.forEach( function( utxo ) {
+                            available_utxos.push( utxo );
+                            from_amount = from_amount + utxo[ "amount" ];
+                        });
+                    }
+                    var destino = prompt( "Enter the bitcoin address where you want your sats to go" );
+                    var base_size = 200;
+                    var full_size = base_size + ( available_utxos.length * 50 );
+                    var fee_options = await getThreeFeeRates( mempoolNetwork );
+                    var sats_per_byte = prompt( `Please enter a fee rate as a number. Specifically, the number of sats per byte you want to pay. The minimum rate is ${fee_options[ 0 ]}, the average rate is ${fee_options[ 1 ]}, and the urgent rate is ${fee_options[ 2 ]}.` );
+                    var sats_per_byte = Number( sats_per_byte );
+                    if ( !sats_per_byte ) {
+                    	alert( "You entered an invalid fee rate. You must enter a number greater than 0, such as 5, 10, or 25. Please try again." );
+                    	return;
+                    }
+                    var txfee = sats_per_byte * full_size;
+                    var txhex = craftTransaction( available_utxos, from_amount - txfee, destino, mempoolNetwork );
+                    var conf = confirm( `Click ok if this is what you want to do:\n\nAmount you will receive: ${from_amount - txfee} sats\n\nMining fee: ${txfee} sats\n\nAmount left over in this shop: 0 sats\n\nDestination address: ${destino}\n\n` )
+                    var txid = await pushBTCpmt( txhex, mempoolNetwork );
+                    if ( txid && txid != "error" ) alert( `Success! You can view your transaction here: https://mempool.space/${mempoolNetwork}tx/${txid}` ); else alert( `Oh no, there was a transaction failure! Try broadcasting your raw transaction here: https://mempool.space/${mempoolNetwork}tx/push\n\n${txhex}` );
+                    console.log( "raw tx:", txhex );
+                    await waitSomeSeconds( 2 );
+                    $( '.manage_sales_btn' ).click();
+                }
+            }
+            $( '.manage_sales_btn' ).onclick = manageSales;
+        }
+    </script>
+    <script>
+        async function init() {
+            sessionStorage[ "btc_price" ] = await getBitcoinPrice();
+        }
+        init();
+    </script>
+</body>
+</html>
