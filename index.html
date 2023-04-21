@@ -465,6 +465,7 @@
         }
     </script>
     <script>
+    	var products = [];
         var private_keys = [];
         var available_utxos = [];
         if ( localStorage[ "shipped_orders" ] ) var shipped_orders = JSON.parse( localStorage[ "shipped_orders" ] ); else var shipped_orders = [];
@@ -505,6 +506,7 @@
             }
             // console.log('content:', content);
             if ( kind === 12196 ) {
+            	products = [];
                 $( '.store_products' ).innerHTML = ``;
                 if ( $( '.sales_count' ) ) $( '.sales_count' ).innerText = 0;
                 var array = event.tags[ 0 ];
@@ -517,6 +519,7 @@
             }
             if ( kind === 42196 ) {
                 var content = JSON.parse( content );
+                products.push( content );
                 if ( $_GET[ "privkey" ] ) {
                     if ( $( '.products' ).children.length > 3 ) $$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
                     $( '.product' ).children[ 0 ].value = content.product;
@@ -554,8 +557,10 @@
                         });
                     }
                 });
-                $$( '.view_product_btn' ).forEach( function( item ) {
-                    item.onclick = (e) => {
+                $$( '.view_product_btn' ).forEach( function( item, index ) {
+                	item.onclick = (e) => {
+                		var c2 = products[ index ];
+                		console.log( c2 );
                         $( '.store_products' ).style.display = "none";
                         $( '.blank_view' ).innerHTML = `
                             <div class="viewed_product">
@@ -572,11 +577,11 @@
                                 <button class="add_to_cart">Add to cart</button>
                             </div>
                         `;
-                        $( '.viewed_product .product_name' ).innerText = content.product;
-                        $( '.viewed_product .product_image' ).src = content.image;
-                        $( '.viewed_product .product_price' ).innerText = ( content.price / 100 ).toFixed( 2 );
-                        $( '.viewed_product .product_description' ).innerText = content.description;
-                        $( '.viewed_product .shipping_zone' ).innerText = content.shipping_zone;
+                        $( '.viewed_product .product_name' ).innerText = c2.product;
+                        $( '.viewed_product .product_image' ).src = c2.image;
+                        $( '.viewed_product .product_price' ).innerText = ( c2.price / 100 ).toFixed( 2 );
+                        $( '.viewed_product .product_description' ).innerText = c2.description;
+                        $( '.viewed_product .shipping_zone' ).innerText = c2.shipping_zone;
                         $( '.blank_view' ).style.display = "block";
                         $$( '.add_to_cart' ).forEach( function( item ) {
                             item.onclick = (e) => {
