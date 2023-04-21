@@ -105,7 +105,7 @@
         var $_GET = {}
         for ( var key of url_keys ) $_GET[ key ] = url_params.get( key );
         var mempoolNetwork = "";
-    	if ( $_GET[ "network" ] == "testnet" ) mempoolNetwork = $_GET[ "network" ] + "/";
+        if ( $_GET[ "network" ] == "testnet" ) mempoolNetwork = $_GET[ "network" ] + "/";
     </script>
     <script>
         function makeSmallPrivkey() {
@@ -284,10 +284,10 @@
                 return new Promise(function (resolve, reject) {
                     if (!data_i_seek) {
                         setTimeout(async function () {
-                        	if ( $( '.blank_view h2' ).innerText != "Checkout" || $( '.blank_view' ).style.display == "none" ) {
-                        		resolve( "stopped" );
-                        		return;
-                        	}
+                            if ( $( '.blank_view h2' ).innerText != "Checkout" || $( '.blank_view' ).style.display == "none" ) {
+                                resolve( "stopped" );
+                                return;
+                            }
                             console.log("waiting for address to receive money...");
                             try {
                                 itReceivedMoney = await addressOnceHadMoney(address, network);
@@ -356,7 +356,7 @@
         }
 
         function getNativeSegwitAddressFromPubkeyHex( pubkeyhex, network ) {
-        	if ( !network ) network = bitcoinjs.networks.mainnet; else network = bitcoinjs.networks.testnet;
+            if ( !network ) network = bitcoinjs.networks.mainnet; else network = bitcoinjs.networks.testnet;
             return bitcoinjs.payments.p2wpkh({ pubkey: buffer.Buffer.from( pubkeyhex, "hex" ), network: network }).address;
         }
 
@@ -390,7 +390,7 @@
             return( obj );
         }
         function craftTransaction( selected_utxos, to_amount, to_address, network ) {
-        	if ( !network ) network = bitcoinjs.networks.mainnet; else network = bitcoinjs.networks.testnet;
+            if ( !network ) network = bitcoinjs.networks.mainnet; else network = bitcoinjs.networks.testnet;
             if ( !to_amount ) {
                 return;
             }
@@ -433,7 +433,7 @@
             $( ".modal" ).style.display = "none";
         }
         function showModal( content, block_til_clear ) {
-        	if ( block_til_clear ) var fn = `modalVanish();sessionStorage[ 'modal_cleared' ] = true;`; else var fn = `modalVanish();`;
+            if ( block_til_clear ) var fn = `modalVanish();sessionStorage[ 'modal_cleared' ] = true;`; else var fn = `modalVanish();`;
             $( ".modal" ).innerHTML = `<div style="position: absolute;right: 1rem;top: 0.5rem;font-size: 2rem; cursor: pointer;" onclick="${fn}">&times;</div>`;
             $( ".modal" ).innerHTML += `<div style="overflow-y: scroll; max-height: 80vh; margin-top: 1.5rem;">${content}</div>`;
             $( ".black-bg" ).style.display = "block";
@@ -501,7 +501,7 @@
             }
             // console.log('content:', content);
             if ( kind === 12196 ) {
-            	$( '.store_products' ).innerHTML = ``;
+                $( '.store_products' ).innerHTML = ``;
                 var array = event.tags[ 0 ];
                 array.splice( 0, 1 );
                 // console.log( array );
@@ -773,7 +773,7 @@
             console.log( "signed store event:", signedEvent );
             socket.send(JSON.stringify([ "EVENT", signedEvent ]));
             if ( window.location.href.indexOf( "?" ) > -1 ) var url = window.location.href.substring( 0, window.location.href.indexOf( "?" ) ); else var url = window.location.href;
-        	sessionStorage.removeItem( "modal_cleared" );
+            sessionStorage.removeItem( "modal_cleared" );
             var content = `<p><a href="${url}?pubkey=${original_pubkey}" target="_blank">Click here</a> to share your store</p><p><a href="${url}?privkey=${privKey}" target="_blank">Click here</a> to manage your store and withdraw your earnings</p>`;
             showModal( content, true );
             await getNote( "modal_cleared" );
@@ -842,9 +842,9 @@
                     socket.send(JSON.stringify([ "EVENT", signedEvent ]));
                     await waitSomeSeconds( 2 );
                     sessionStorage.removeItem( "modal_cleared" );
-		            var content = `<p>Thank you for your business. Here is your proof of payment: ${whisper_key}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
-		            showModal( content, true );
-		            await getNote( "modal_cleared" );
+                    var content = `<p>Thank you for your business. Here is your proof of payment: ${whisper_key}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
+                    showModal( content, true );
+                    await getNote( "modal_cleared" );
                     // alert( `Thank you for your business. Here is your proof of payment: ${whisper_key}\n\nKeep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.` );
                 }
             }
@@ -852,20 +852,20 @@
         $( '.view_cart' ).onclick = renderCart;
     </script>
     <script>
-    	async function openConnection() {
+        async function openConnection() {
             console.log( "connected to " + relay );
             var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
-    		if ( $_GET[ "pubkey"] ) {
-	            var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196 ] }
-	            var subscription = [ "REQ", subId, filter ];
-    		}
-    		if ( $_GET[ "privkey"] ) {
+            if ( $_GET[ "pubkey"] ) {
+                var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196 ] }
+                var subscription = [ "REQ", subId, filter ];
+            }
+            if ( $_GET[ "privkey"] ) {
                 var filter  = { "#p": [ pubKey ], kinds: [ 4 ] }
                 var filter2  = { authors: [ pubKey ], kinds: [ 12196 ] }
                 var subscription = [ "REQ", subId, filter, filter2 ];
-    		}
+            }
             socket.send(JSON.stringify( subscription ));
-    	}
+        }
         if ( $_GET[ "pubkey" ] ) {
             //this codeblock creates the whisper address
             var linking_pubkey = $_GET[ "pubkey" ];
@@ -924,9 +924,9 @@
                     var items = ``;
                     var names_and_prices = [];
                     sale[ 1 ].forEach( function( item, index ) {
-		                total = total + Number( item[ "price" ] );
-		                items += `<div class="minicart" style="display: flex; justify-content: space-between; text-align: left;"><div class="product_name"></div><div class="product_price" style="text-align: right;align-self: center;"></div></div>`;
-		                names_and_prices.push( [ item[ "item" ], item[ "price" ] ] );
+                        total = total + Number( item[ "price" ] );
+                        items += `<div class="minicart" style="display: flex; justify-content: space-between; text-align: left;"><div class="product_name"></div><div class="product_price" style="text-align: right;align-self: center;"></div></div>`;
+                        names_and_prices.push( [ item[ "item" ], item[ "price" ] ] );
                     });
                     var paid_amount = balance_in_dollars;
                     if ( sale[ 3 ] ) paid_amount = ( total / 100 ).toFixed( 2 );
@@ -938,24 +938,24 @@
                     $( '.orders' ).innerHTML += order;
                     $$( '.delivery_info' )[ $$( '.delivery_info' ).length - 1 ].innerText = delivery_info;
                     var existing_number = $$( '.blank_view .minicart .product_name' ).length;
-	                names_and_prices.forEach( function( item, index ) {
-	                	//must be -2 the first time and -1 the second time
-	                	//names_and_prices.length is 2 so I can emulate -2 with - names_and_prices.length - index
-	                	//then the second time it will be names_and_prices.length - 1 which is -1
-						$$( '.blank_view .minicart .product_name' )[ existing_number - ( names_and_prices.length - index ) ].innerText = item[ 0 ];
-			            $$( '.blank_view .minicart .product_price' )[ existing_number - ( names_and_prices.length - index ) ].innerText = "$" + ( item[ 1 ] / 100 ).toFixed( 2 )
+                    names_and_prices.forEach( function( item, index ) {
+                        //must be -2 the first time and -1 the second time
+                        //names_and_prices.length is 2 so I can emulate -2 with - names_and_prices.length - index
+                        //then the second time it will be names_and_prices.length - 1 which is -1
+                        $$( '.blank_view .minicart .product_name' )[ existing_number - ( names_and_prices.length - index ) ].innerText = item[ 0 ];
+                        $$( '.blank_view .minicart .product_price' )[ existing_number - ( names_and_prices.length - index ) ].innerText = "$" + ( item[ 1 ] / 100 ).toFixed( 2 )
                     });
 ;
                 });
                 $( '.withdraw' ).onclick = async () => {
-                	var some_unshipped_items = false;
-                	sales.forEach( function( sale ) {
-                	    if ( !sale[ 3 ] ) some_unshipped_items = true;
-                	});
-                	if ( some_unshipped_items ) {
-                	    alert( `You cannot withdraw your money til you ship all your orders.` );
-                	    return;
-                	}
+                    var some_unshipped_items = false;
+                    sales.forEach( function( sale ) {
+                        if ( !sale[ 3 ] ) some_unshipped_items = true;
+                    });
+                    if ( some_unshipped_items ) {
+                        alert( `You cannot withdraw your money til you ship all your orders.` );
+                        return;
+                    }
                     var from_amount = 0;
                     var i; for ( i=0; i<private_keys.length; i++ ) {
                         var utxos_in_this_address = await getUTXOs( private_keys[ i ], mempoolNetwork );
@@ -971,8 +971,8 @@
                     var sats_per_byte = prompt( `Please enter a fee rate as a number. Specifically, the number of sats per byte you want to pay. The minimum rate is ${fee_options[ 0 ]}, the average rate is ${fee_options[ 1 ]}, and the urgent rate is ${fee_options[ 2 ]}.` );
                     var sats_per_byte = Number( sats_per_byte );
                     if ( !sats_per_byte ) {
-                    	alert( "You entered an invalid fee rate. You must enter a number greater than 0, such as 5, 10, or 25. Please try again." );
-                    	return;
+                        alert( "You entered an invalid fee rate. You must enter a number greater than 0, such as 5, 10, or 25. Please try again." );
+                        return;
                     }
                     var txfee = sats_per_byte * full_size;
                     var txhex = craftTransaction( available_utxos, from_amount - txfee, destino, mempoolNetwork );
@@ -980,17 +980,17 @@
                     if ( !conf ) return;
                     var txid = await pushBTCpmt( txhex, mempoolNetwork );
                     if ( txid && txid != "error" ) {
-                    	sessionStorage.removeItem( "modal_cleared" );
-			            var content = `<p>Success! You can view your transaction here: https://mempool.space/${mempoolNetwork}tx/${txid}</p>`;
-			            showModal( content, true );
-			            await getNote( "modal_cleared" );
-                    	// alert( `Success! You can view your transaction here: https://mempool.space/${mempoolNetwork}tx/${txid}` );
+                        sessionStorage.removeItem( "modal_cleared" );
+                        var content = `<p>Success! You can view your transaction here: https://mempool.space/${mempoolNetwork}tx/${txid}</p>`;
+                        showModal( content, true );
+                        await getNote( "modal_cleared" );
+                        // alert( `Success! You can view your transaction here: https://mempool.space/${mempoolNetwork}tx/${txid}` );
                     } else {
-                    	sessionStorage.removeItem( "modal_cleared" );
-			            var content = `<p>Oh no, there was a transaction failure! Try broadcasting your raw transaction here: https://mempool.space/${mempoolNetwork}tx/push</p><p>${txhex}</p>`;
-			            showModal( content, true );
-			            await getNote( "modal_cleared" );
-                    	// alert( `Oh no, there was a transaction failure! Try broadcasting your raw transaction here: https://mempool.space/${mempoolNetwork}tx/push\n\n${txhex}` );
+                        sessionStorage.removeItem( "modal_cleared" );
+                        var content = `<p>Oh no, there was a transaction failure! Try broadcasting your raw transaction here: https://mempool.space/${mempoolNetwork}tx/push</p><p>${txhex}</p>`;
+                        showModal( content, true );
+                        await getNote( "modal_cleared" );
+                        // alert( `Oh no, there was a transaction failure! Try broadcasting your raw transaction here: https://mempool.space/${mempoolNetwork}tx/push\n\n${txhex}` );
                     }
                     console.log( "raw tx:", txhex );
                     await waitSomeSeconds( 2 );
@@ -1001,19 +1001,19 @@
         }
     </script>
     <script>
-    	function checkHeartbeat() {
-    		console.log( "checking heartbeat..." );
-    	    if ( socket.readyState != 1 ) {
-    	    	alert( "you have no connection to the relay!" );
-		        socket = new WebSocket( relay );
-    	        socket.removeEventListener( 'open', openConnection );
-    	        socket.removeEventListener( 'message', handleMessage );
-    	        socket = new WebSocket( relay );
-    	        socket.addEventListener( 'message', handleMessage );
-    	        socket.addEventListener( 'open', openConnection );
-    	    }
-    	    setTimeout( checkHeartbeat, 2000 );
-    	}
+        function checkHeartbeat() {
+            console.log( "checking heartbeat..." );
+            if ( socket.readyState != 1 ) {
+                alert( "you have no connection to the relay!" );
+                socket = new WebSocket( relay );
+                socket.removeEventListener( 'open', openConnection );
+                socket.removeEventListener( 'message', handleMessage );
+                socket = new WebSocket( relay );
+                socket.addEventListener( 'message', handleMessage );
+                socket.addEventListener( 'open', openConnection );
+            }
+            setTimeout( checkHeartbeat, 2000 );
+        }
         async function init() {
             sessionStorage[ "btc_price" ] = await getBitcoinPrice();
             checkHeartbeat();
