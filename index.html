@@ -772,6 +772,7 @@
             console.log( "signed store event:", signedEvent );
             socket.send(JSON.stringify([ "EVENT", signedEvent ]));
             if ( window.location.href.indexOf( "?" ) > -1 ) var url = window.location.href.substring( 0, window.location.href.indexOf( "?" ) ); else var url = window.location.href;
+        	sessionStorage.removeItem( "modal_cleared" );
             var content = `<p>Here is your sharable store url:</p><p>${url}?pubkey=${original_pubkey}</p><p>Here is your private management url:</p><p>${url}?privkey=${privKey}</p>`;
             showModal( content, true );
             await getNote( "modal_cleared" );
@@ -839,7 +840,11 @@
                     var signedEvent = await getSignedEvent(event, privKey);
                     socket.send(JSON.stringify([ "EVENT", signedEvent ]));
                     await waitSomeSeconds( 2 );
-                    alert( `Thank you for your business. Here is your proof of payment: ${whisper_key}\n\nKeep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.` );
+                    sessionStorage.removeItem( "modal_cleared" );
+		            var content = `<p>Thank you for your business. Here is your proof of payment: ${whisper_key}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
+		            showModal( content, true );
+		            await getNote( "modal_cleared" );
+                    // alert( `Thank you for your business. Here is your proof of payment: ${whisper_key}\n\nKeep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.` );
                 }
             }
         }
@@ -973,7 +978,19 @@
                     var conf = confirm( `Click ok if this is what you want to do:\n\nAmount you will receive: ${from_amount - txfee} sats\n\nMining fee: ${txfee} sats\n\nAmount left over in this shop: 0 sats\n\nDestination address: ${destino}\n\n` )
                     if ( !conf ) return;
                     var txid = await pushBTCpmt( txhex, mempoolNetwork );
-                    if ( txid && txid != "error" ) alert( `Success! You can view your transaction here: https://mempool.space/${mempoolNetwork}tx/${txid}` ); else alert( `Oh no, there was a transaction failure! Try broadcasting your raw transaction here: https://mempool.space/${mempoolNetwork}tx/push\n\n${txhex}` );
+                    if ( txid && txid != "error" ) {
+                    	sessionStorage.removeItem( "modal_cleared" );
+			            var content = `<p>Success! You can view your transaction here: https://mempool.space/${mempoolNetwork}tx/${txid}</p>`;
+			            showModal( content, true );
+			            await getNote( "modal_cleared" );
+                    	// alert( `Success! You can view your transaction here: https://mempool.space/${mempoolNetwork}tx/${txid}` );
+                    } else {
+                    	sessionStorage.removeItem( "modal_cleared" );
+			            var content = `<p>Oh no, there was a transaction failure! Try broadcasting your raw transaction here: https://mempool.space/${mempoolNetwork}tx/push</p><p>${txhex}</p>`;
+			            showModal( content, true );
+			            await getNote( "modal_cleared" );
+                    	// alert( `Oh no, there was a transaction failure! Try broadcasting your raw transaction here: https://mempool.space/${mempoolNetwork}tx/push\n\n${txhex}` );
+                    }
                     console.log( "raw tx:", txhex );
                     await waitSomeSeconds( 2 );
                     $( '.manage_sales_btn' ).click();
