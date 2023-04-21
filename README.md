@@ -32,7 +32,7 @@ There is no setup process for the store itself, you just immediately start addin
 
 Important! Save your private link. It contains your private key which you'll need to access your money and manage your store. If you lose your private key you lose your money. Keep it secret, keep it safe!
 
-Also make sure you withdraw your money from the store frequently. The site uses whisper keys, which are sent to you in dms and not stored anywhere but on whatever relay you use. I personally don't trust nostr relays to store my dms forever so I recommend you withdraw your money quickly when you receive it, don't just let it sit there for weeks on end or the nostr relay you are connected to might delete your dms or go offline and leave you stranded without access to your money
+Also make sure you withdraw your money from the store frequently. The site uses whisper keys, which are sent to you in dms and not stored anywhere except on whatever relay you use. I personally don't trust nostr relays to store my dms forever so I recommend you withdraw your money quickly when you receive it, don't just let it sit there for weeks on end or the nostr relay you are connected to might delete your dms or go offline and leave you stranded without access to your money
 
 # What are some upcoming features?
 
