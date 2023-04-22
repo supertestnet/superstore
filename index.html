@@ -935,6 +935,20 @@
 	                    if ( !txinfo[ 1 ] ) txinfo[ 1 ] = 0;
 	                    if ( !txinfo[ 2 ] ) txinfo[ 2 ] = 0;
                     }
+                    //don't display orders that are not paid for
+                    //but do show them if they only *seem* unpaid for but really are
+                    //because the money was withdrawn before they were shipped
+                    //I detect that (or try to) by checking if the item was shipped
+                    //because if the amount paid is zero *and* the amount was shipped
+                    //then I can be pretty confident the order was paid for (otherwise
+                    //the seller wouldn't mark it shipped) but then they just withdrew
+                    //their money before marking it as shipped -- the stuff about
+                    //changing txinfo items to other things is a tool that helps me
+                    //when trying stuff on testnet. Mainnet orders that got shipped
+                    //show up with undefined info that makes the total amount available
+                    //in my wallet "turn into" an NaN. By pretending there are values
+                    //and setting them to 0 I fixed that error while still allowing me
+                    //to spend the money that actually *is* in my wallet.
                     if ( shipped_orders.includes( sale[ 2 ] ) ) {
                     	sale[ 3 ] = 1;
 	                    if ( !txinfo[ 0 ] ) txinfo[ 0 ] = "abababababababababababababababababababababababababababababababab";
@@ -944,14 +958,6 @@
                     var address_balance = txinfo[ 2 ];
                     // var address_balance = await getAddressBalance( whisper_address, mempoolNetwork );
                     var balance_in_dollars = satsToDollars( address_balance ).toFixed( 2 );
-                    //don't display orders that are not paid for
-                    //but do show them if they only *seem* unpaid for but really are
-                    //because the money was withdrawn before they were shipped
-                    //I detect that (or try to) by checking if the item was shipped
-                    //because if the amount paid is zero *and* the amount was shipped
-                    //then I can be pretty confident the order was paid for (otherwise
-                    //the seller wouldn't mark it shipped) but then they just withdrew
-                    //their money before marking it as shipped
                     if ( balance_in_dollars == "0.00" && !sale[ 3 ] ) return;
                     $( '.btc_balance' ).innerText = Number( $( '.btc_balance' ).innerText ) + address_balance;
                     $( '.usd_balance' ).innerText = satsToDollars( Number( $( '.btc_balance' ).innerText ) ).toFixed( 2 );
