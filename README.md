@@ -7,7 +7,7 @@ A simple bitcoin webstore with whisper addresses for enhanced privacy
 
 # What is this?
 
-Superstore is a solution to the following problem: I often wish I had a store where I could sell some stuff, but then I remember how hard it is to set up a store. First you need a server -- which probably costs money, unless you self host one, which is hard -- then you need to set up the store, which means naming it, styling it, adding payment methods, connecting a bank account or paypal or stripe or similar (and dealing with their fees), then add shipping options, then add your products, then -- assuming you want to accept bitcoin too -- you've probably got to install some special software or a special plugin or give custody to some third party. And you also lose your privacy because you're probably giving your xpubs to those folks too.
+Superstore is a solution to the following problem: I often wish I had a store where I could sell stuff, but then I remember how hard it is to set up a store. First you need a server -- which probably costs money, unless you self host one, which is hard -- then you need to set up the store, which means naming it, styling it, adding payment methods, connecting a bank account or paypal or stripe or similar (and dealing with their fees), then add shipping options, then add your products, then -- assuming you want to accept bitcoin too -- you've probably got to install some special software or a special plugin or give custody to some third party. And you also lose your privacy because you're probably giving your xpubs to those folks too.
 
 # What if there was a simpler way?
 
