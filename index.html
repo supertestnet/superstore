@@ -1003,7 +1003,7 @@
                     }
                     var txfee = sats_per_byte * full_size;
                     var txhex = craftTransaction( available_utxos, from_amount - txfee, destino, mempoolNetwork );
-                    var conf = confirm( `Click ok if this is what you want to do:\n\nAmount you will receive: ${from_amount - txfee} sats\n\nMining fee: ${txfee} sats\n\nAmount left over in this shop: 0 sats\n\nDestination address: ${destino}\n\n` )
+                    var conf = confirm( `Click ok if this is what you want to do:\n\nAmount this shop has: ${from_amount} sats\n\nMining fee for this tx: ${txfee} sats\n\nAmount you will receive: ${from_amount - txfee} sats\n\nAmount this shop will have leftover: 0 sats\n\nDestination address: ${destino}\n\n` );
                     if ( !conf ) return;
                     var txid = await pushBTCpmt( txhex, mempoolNetwork );
                     if ( txid && txid != "error" ) {
