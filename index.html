@@ -871,6 +871,8 @@
                     cart.forEach( function( item, index ) {
                         receipt_items += `<div>Item: ${item[ "item" ]} | Price: $${( item[ "price" ] / 100 ).toFixed( 2 )}</div>`;
                     });
+                    cart = [];
+                    if ( $( '.minicart_item_count' ) ) $( '.minicart_item_count' ).innerText = 0;
                     var content = `<p>Thank you for your business. Here is your receipt:</p><p style="font-weight: bold;">Items purchased</p>${receipt_items}<p>Total: $${( total / 100 ).toFixed( 2 )}</p><p>Proof of payment: ${whisper_key}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
                     showModal( content, true );
                     await getNote( "modal_cleared" );
@@ -927,9 +929,21 @@
                     var privkey = addKeys( privKey, whisper_key );
                     var combokey = getCompressedPubkeyHexFromPrivkeyHex( privkey );
                     var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
-                    var address_balance = await getAddressBalance( whisper_address, mempoolNetwork );
+                    var txinfo = await addressReceivedMoneyInThisTx( whisper_address, mempoolNetwork );
+                    if ( $_GET[ "debug" ] == "true" ) {
+	                    if ( !txinfo[ 0 ] ) txinfo[ 0 ] = "abababababababababababababababababababababababababababababababab";
+	                    if ( !txinfo[ 1 ] ) txinfo[ 1 ] = 0;
+	                    if ( !txinfo[ 2 ] ) txinfo[ 2 ] = 0;
+                    }
+                    if ( shipped_orders.includes( sale[ 2 ] ) ) {
+                    	sale[ 3 ] = 1;
+	                    if ( !txinfo[ 0 ] ) txinfo[ 0 ] = "abababababababababababababababababababababababababababababababab";
+	                    if ( !txinfo[ 1 ] ) txinfo[ 1 ] = 0;
+                    	txinfo[ 2 ] = 0;
+                    }
+                    var address_balance = txinfo[ 2 ];
+                    // var address_balance = await getAddressBalance( whisper_address, mempoolNetwork );
                     var balance_in_dollars = satsToDollars( address_balance ).toFixed( 2 );
-                    if ( shipped_orders.includes( sale[ 2 ] ) ) sale[ 3 ] = 1;
                     //don't display orders that are not paid for
                     //but do show them if they only *seem* unpaid for but really are
                     //because the money was withdrawn before they were shipped
@@ -960,8 +974,8 @@
                     if ( sale[ 3 ] ) paid_amount = ( total / 100 ).toFixed( 2 );
                     var delivery_info = (sale[ 0 ][ "shipping_info" ]) ? sale[ 0 ][ "shipping_info" ]:sale[ 0 ][ "edelivery_info" ];
                     var order = `
-                        <div class="minicart order" style="background-color: ${bgcolor}; display: flex; justify-content: space-between; text-align: left;"><div>Deliver to:<br><div class="delivery_info"></div></div><div style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );">${shipped_instructions}</button></div></div>
-                        <div style="display: none; border: 1px solid black; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem;"><div style="font-weight: bold;">Details</div><br>${items}<div style="text-align: right;">Total they owed: $${( total / 100 ).toFixed( 2 )}</div><div style="text-align: right;">Total they paid: $${paid_amount}</div></div>
+                        <div class="minicart order" style="background-color: ${bgcolor}; display: flex; justify-content: space-between; text-align: left;"><div>Delivery info:<br><div class="delivery_info"></div></div><div style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );">${shipped_instructions}</button></div></div>
+                        <div style="display: none; border: 1px solid black; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem;"><div style="font-weight: bold;">Details</div><br>${items}<div style="text-align: right;">Total they owed: $${( total / 100 ).toFixed( 2 )}</div><div style="text-align: right;">Total they paid: $${paid_amount}</div><div style="text-align: right;"><a href="https://mempool.space/${mempoolNetwork}tx/${txinfo[ 0 ]}:${txinfo[ 1 ]}" target="_blank">Inspect transaction</a></div></div>
                     `;
                     $( '.orders' ).innerHTML += order;
                     $$( '.delivery_info' )[ $$( '.delivery_info' ).length - 1 ].innerText = delivery_info;
@@ -973,7 +987,6 @@
                         $$( '.blank_view .minicart .product_name' )[ existing_number - ( names_and_prices.length - index ) ].innerText = item[ 0 ];
                         $$( '.blank_view .minicart .product_price' )[ existing_number - ( names_and_prices.length - index ) ].innerText = "$" + ( item[ 1 ] / 100 ).toFixed( 2 )
                     });
-;
                 });
                 $( '.withdraw' ).onclick = async () => {
                     var some_unshipped_items = false;
@@ -1009,13 +1022,13 @@
                     var txid = await pushBTCpmt( txhex, mempoolNetwork );
                     if ( txid && txid != "error" ) {
                         sessionStorage.removeItem( "modal_cleared" );
-                        var content = `<p>Success! You can view your transaction here: https://mempool.space/${mempoolNetwork}tx/${txid}</p>`;
+                        var content = `<p>Success! You can <a href="https://mempool.space/${mempoolNetwork}tx/${txid}:0" target="_blank">view your transaction here</a></p>`;
                         showModal( content, true );
                         await getNote( "modal_cleared" );
                         // alert( `Success! You can view your transaction here: https://mempool.space/${mempoolNetwork}tx/${txid}` );
                     } else {
                         sessionStorage.removeItem( "modal_cleared" );
-                        var content = `<p>Oh no, there was a transaction failure! Try broadcasting your raw transaction here: https://mempool.space/${mempoolNetwork}tx/push</p><p>${txhex}</p>`;
+                        var content = `<p>Oh no, there was a transaction failure! Try broadcasting your raw transaction <a href="https://mempool.space/${mempoolNetwork}tx/push" target="_blank">here</a></p><p>${txhex}</p>`;
                         showModal( content, true );
                         await getNote( "modal_cleared" );
                         // alert( `Oh no, there was a transaction failure! Try broadcasting your raw transaction here: https://mempool.space/${mempoolNetwork}tx/push\n\n${txhex}` );
