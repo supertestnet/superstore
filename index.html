@@ -501,6 +501,7 @@
                 if ( typeof content[ 1 ][ 0 ] != "object" ) return;
                 if ( !content[ 1 ][ 0 ][ "item" ] ) return;
                 if ( !content[ 1 ][ 0 ][ "price" ] ) return;
+                if ( !content[ 1 ][ 0 ][ "shipping_zone" ] ) return;
                 sales.push( [ ...content, event.id, 0 ] );
                 if ( !shipped_orders.includes( event.id ) ) $( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) + 1;
             }
