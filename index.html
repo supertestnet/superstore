@@ -34,6 +34,9 @@
             border: 1px solid grey;
             margin-bottom: 1rem;
         }
+        .make_store {
+        	display: none;
+        }
         .product {
             border: 1px solid black;
             border-radius: 1rem;
@@ -662,6 +665,7 @@
 </head>
 <body>
     <h1>Welcome to superstore, a simple bitcoin webstore</h1>
+    <div class="splash_screen">Loading...</div>
     <div class="make_store">
         <div class="products">
             <div class="manage_sales_toolbar"></div>
@@ -1074,6 +1078,8 @@
         }
         async function init() {
             sessionStorage[ "btc_price" ] = await getBitcoinPrice();
+            $( '.splash_screen' ).style.display = "none";
+            $( '.make_store' ).style.display = "block";
             checkHeartbeat();
         }
         init();
