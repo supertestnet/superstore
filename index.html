@@ -516,13 +516,14 @@
                 var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
                 var filter  = { ids: array }
                 var subscription = [ "REQ", subId, filter ];
+	            if ( $_GET[ "privkey" ] ) {
+	                $( '.product' ).children[ 0 ].value = "";
+	                $( '.product' ).children[ 1 ].value = "";
+	                $( '.product' ).children[ 2 ].value = "";
+	                $( '.product' ).children[ 3 ].value = "--- Shipping zone ---";
+	                $( '.product' ).children[ 4 ].value = "";
+	            }
                 socket.send(JSON.stringify( subscription ));
-	            if ( !$_GET[ "privkey" ] ) return;
-                $( '.product' ).children[ 0 ].value = "";
-                $( '.product' ).children[ 1 ].value = "";
-                $( '.product' ).children[ 2 ].value = "";
-                $( '.product' ).children[ 3 ].value = "--- Shipping zone ---";
-                $( '.product' ).children[ 4 ].value = "";                
             }
             if ( kind === 42196 ) {
                 var content = JSON.parse( content );
