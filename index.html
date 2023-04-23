@@ -930,7 +930,7 @@
                     var combokey = getCompressedPubkeyHexFromPrivkeyHex( privkey );
                     var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
                     var txinfo = await addressReceivedMoneyInThisTx( whisper_address, mempoolNetwork );
-                    if ( $_GET[ "debug" ] == "true" ) {
+                    if ( $_GET[ "debug" ] == "true" || !txinfo[ 0 ] ) {
 	                    if ( !txinfo[ 0 ] ) txinfo[ 0 ] = "abababababababababababababababababababababababababababababababab";
 	                    if ( !txinfo[ 1 ] ) txinfo[ 1 ] = 0;
 	                    if ( !txinfo[ 2 ] ) txinfo[ 2 ] = 0;
