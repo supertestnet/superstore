@@ -517,12 +517,18 @@
                 var filter  = { ids: array }
                 var subscription = [ "REQ", subId, filter ];
                 socket.send(JSON.stringify( subscription ));
+	            if ( !$_GET[ "privkey" ] ) return;
+                $( '.product' ).children[ 0 ].value = "";
+                $( '.product' ).children[ 1 ].value = "";
+                $( '.product' ).children[ 2 ].value = "";
+                $( '.product' ).children[ 3 ].value = "--- Shipping zone ---";
+                $( '.product' ).children[ 4 ].value = "";                
             }
             if ( kind === 42196 ) {
                 var content = JSON.parse( content );
                 products.push( content );
                 if ( $_GET[ "privkey" ] ) {
-                    if ( $( '.products' ).children.length > 3 ) $$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
+                    if ( $( '.product' ).children[ 0 ].value ) $$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
                     $( '.product' ).children[ 0 ].value = content.product;
                     $( '.product' ).children[ 1 ].value = content.image;
                     $( '.product' ).children[ 2 ].value = content.description;
