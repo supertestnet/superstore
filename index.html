@@ -955,6 +955,7 @@
 	                    if ( !txinfo[ 1 ] ) txinfo[ 1 ] = 0;
                     	txinfo[ 2 ] = 0;
                     }
+                    console.log( "txinfo:", txinfo );
                     var address_balance = txinfo[ 2 ];
                     // var address_balance = await getAddressBalance( whisper_address, mempoolNetwork );
                     var balance_in_dollars = satsToDollars( address_balance ).toFixed( 2 );
