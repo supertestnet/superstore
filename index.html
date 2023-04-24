@@ -532,12 +532,20 @@
                 var content = JSON.parse( content );
                 products.push( content );
                 if ( $_GET[ "privkey" ] ) {
-                    if ( $( '.product' ).children[ 0 ].value ) $$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
-                    $( '.product' ).children[ 0 ].value = content.product;
-                    $( '.product' ).children[ 1 ].value = content.image;
-                    $( '.product' ).children[ 2 ].value = content.description;
-                    $( '.product' ).children[ 3 ].value = content.shipping_zone;
-                    $( '.product' ).children[ 4 ].value = ( content.price / 100 ).toFixed( 2 );
+                    if ( !$( '.product' ).children[ 0 ].value ) {
+                        $( '.product' ).children[ 0 ].value = content.product;
+                        $( '.product' ).children[ 1 ].value = content.image;
+                        $( '.product' ).children[ 2 ].value = content.description;
+                        $( '.product' ).children[ 3 ].value = content.shipping_zone;
+                        $( '.product' ).children[ 4 ].value = ( content.price / 100 ).toFixed( 2 );
+                    } else {
+                    	$$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
+	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 0 ].value = content.product;
+	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 1 ].value = content.image;
+	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 2 ].value = content.description;
+	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 3 ].value = content.shipping_zone;
+	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 4 ].value = ( content.price / 100 ).toFixed( 2 );
+                    }
                     return;
                 }
                 // console.log( content );
