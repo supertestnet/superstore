@@ -479,7 +479,6 @@
         var getRand = size => crypto.getRandomValues(new Uint8Array(size));
         var sha256  = bitcoinjs.crypto.sha256;
         if ( $_GET[ "privkey" ] ) var privKey = $_GET[ "privkey" ]; else var privKey = makeSmallPrivkey();
-        if ( $_GET[ "pubkey" ] ) $( '.products' ).style.display = "none";
         var pubKey  = getCompressedPubkeyHexFromPrivkeyHex( privKey );
         var original_pubkey = pubKey;
         pubKey      = pubKey.substring( 2 );
@@ -692,6 +691,7 @@
     </div>
     <div class="blank_view"></div>
     <script>
+        if ( $_GET[ "pubkey" ] ) $( '.products' ).style.display = "none";
         var cart = [];
         $$( '.price' ).forEach( function( item, index ) {
             $$( '.price' )[ index ].value = "";
