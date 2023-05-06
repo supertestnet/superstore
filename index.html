@@ -691,7 +691,7 @@
     </div>
     <div class="blank_view"></div>
     <script>
-        if ( $_GET[ "pubkey" ] ) $( '.products' ).style.display = "none";
+        if ( $_GET[ "pubkey" ] ) {$( '.products' ).style.display = "none";$( '.store_maker' ).style.display = "none";}
         var cart = [];
         $$( '.price' ).forEach( function( item, index ) {
             $$( '.price' )[ index ].value = "";
