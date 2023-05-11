@@ -91,6 +91,28 @@
             text-align: center;
             word-wrap: break-word;
         }
+        .payment_box {
+            max-width: 400px;
+            border: 1px solid black;
+            border-radius: 1rem;
+            padding: 1rem;
+            text-align: center;
+            word-wrap: break-word;
+        }
+        .qr_code {
+            width: 100%;
+        }
+        .ln_box {
+            display: none;
+        }
+        .title {
+            display: none;
+        }
+        .order {
+            display: flex;
+            justify-content: space-between;
+            text-align: left;
+        }
         @media screen and (max-width: 600px) {
             .product input, .product select, .product textarea {
                 width: calc( 100% );
@@ -101,6 +123,14 @@
             .product button {
                 width: calc( 100% );
                 margin-bottom: 1rem;
+            }
+            .order {
+                flex-wrap: wrap;
+            }
+            .payment_info {
+                border-top: 1px solid black;
+                padding-top: 1rem;
+                margin-top: 1rem;
             }
         }
     </style>
@@ -115,6 +145,9 @@
         if ( $_GET[ "network" ] == "testnet" ) mempoolNetwork = $_GET[ "network" ] + "/";
     </script>
     <script>
+        sessionStorage.removeItem( "wallet_found_if_any" );
+        var ln_domain = null;
+        var ln_readkey = null;
         function makeSmallPrivkey() {
             var privkey = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" );
             if ( privkey.substring( 0, 1 ) != "0" || privkey.substring( 1, 2 ) != "0" ) {
@@ -136,11 +169,17 @@
         function bytesToHex( bytes ) {
             return bytes.reduce( ( str, byte ) => str + byte.toString( 16 ).padStart( 2, "0" ), "" );
         }
-        function getData( url ) {
+        function getData( url, content_type, apikey ) {
             return new Promise( async function( resolve, reject ) {
                 function inner_get( url ) {
                     var xhttp = new XMLHttpRequest();
                     xhttp.open( "GET", url, true );
+                    if ( content_type ) {
+                        xhttp.setRequestHeader( `Content-Type`, content_type );
+                    }
+                    if ( apikey ) {
+                        xhttp.setRequestHeader( `X-Api-Key`, apikey );
+                    }
                     xhttp.send();
                     return xhttp;
                 }
@@ -281,7 +320,7 @@
                 modulesize: 8,
             });
             dataUriPngImage.src = s;
-            dataUriPngImage.id = "qr_code";
+            dataUriPngImage.className = "qr_code";
             return dataUriPngImage;
         }
 
@@ -466,6 +505,49 @@
             var returnable = await getTimeoutData();
             return returnable;
         }
+        async function makeLNWallet( identifier ) {
+            identifier = identifier.substring( 0, 15 );
+            var mywallet = await getData( "https://legend.lnbits.com/wallet?nme=" + identifier );
+            var key1prep = mywallet.split( "Wallet ID:" );
+            wallet_id = key1prep[ 1 ].substring( 14, 46 );
+            var key2prep = mywallet.split( "Admin key:" );
+            adminkey = key2prep[ 1 ].substring( 14, 46 );
+            var key3prep = mywallet.split( "Invoice/read key:" );
+            readkey = key3prep[ 1 ].substring( 14, 46 );
+            var key4prep = mywallet.split( "<qrcode" );
+            wallet_url = key4prep[ 2 ].split( "'" )[ 1 ] + key4prep[ 2 ].split( "'" )[ 3 ];
+            wallet_obj = {}
+            wallet_obj[ "wallet_id" ] = wallet_id;
+            wallet_obj[ "adminkey" ] = adminkey;
+            wallet_obj[ "readkey" ] = readkey;
+            wallet_obj[ "wallet_url" ] = wallet_url;
+            return wallet_obj;
+        }
+        function getNumberOfWithdrawalsAndAmounts( sats, num = 0, array = [] ) {
+            if ( sats > 10000 ) {
+                num = num + 1;
+                withdrawable = sats - Math.floor( sats * .01 );
+                array.push( withdrawable );
+                return getNumberOfWithdrawalsAndAmounts( Math.floor( sats * .01 ), num, array );
+            } else if ( sats >= 101 ) {
+                array.push( sats - 100 );
+            }
+            //if they have 100 sats or less than do what is necessary to bring them down to 5
+            if ( sats < 101 && sats > 7 ) {
+                array.push( sats - 5 );
+            }
+            return array;
+        }
+        async function getLNBalance() {
+            var wallet_url = JSON.parse( localStorage[ "wallet_info" ] )[ "wallet_url" ];
+            var readkey = JSON.parse( localStorage[ "wallet_info" ] )[ "readkey" ];
+            var domain = wallet_url.substring( 0, wallet_url.indexOf( "/wallet" ) );
+            var url = domain + "/api/v1/wallet";
+            var winfo = await getData( url, "application/json", readkey )
+            winfo = JSON.parse( winfo );
+            var balance = Number( Math.floor( winfo[ "balance" ] / 1000 ) );
+            return balance;
+        }
     </script>
     <script>
     	var products = [];
@@ -488,133 +570,163 @@
         async function handleMessage( message ) {
             var [ type, subId, event ] = JSON.parse( message.data );
             var { kind, content } = event || {}
-            if (!event || event === true) return;
-            // console.log('message:', event);
-            if ( kind === 4 ) {
-                content = await decrypt(privKey, event.pubkey, content);
-                if ( !isValidJson( content ) ) return;
-                content = JSON.parse( content );
-                if ( content.length != 2 ) return;
-                if ( !content[ 0 ] ) return;
-                if ( !content[ 1 ] ) return;
-                if ( typeof content[ 0 ] != "object" ) return;
-                if ( typeof content[ 1 ] != "object" ) return;
-                if ( !content[ 0 ][ "whisper_key" ] ) return;
-                if ( !content[ 1 ][ 0 ] ) return;
-                if ( typeof content[ 1 ][ 0 ] != "object" ) return;
-                if ( !content[ 1 ][ 0 ][ "item" ] ) return;
-                if ( !content[ 1 ][ 0 ][ "price" ] ) return;
-                if ( !content[ 1 ][ 0 ][ "shipping_zone" ] ) return;
-                sales.push( [ ...content, event.id, 0 ] );
-                if ( !shipped_orders.includes( event.id ) ) $( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) + 1;
-            }
-            // console.log('content:', content);
-            if ( kind === 12196 ) {
-            	products = [];
-                $( '.store_products' ).innerHTML = ``;
-                if ( $( '.sales_count' ) ) $( '.sales_count' ).innerText = 0;
-                var array = event.tags[ 0 ];
-                array.splice( 0, 1 );
-                // console.log( array );
-                var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
-                var filter  = { ids: array }
-                var subscription = [ "REQ", subId, filter ];
-	        if ( $_GET[ "privkey" ] ) {
-	            $( '.product' ).children[ 0 ].value = "";
-	            $( '.product' ).children[ 1 ].value = "";
-	            $( '.product' ).children[ 2 ].value = "";
-	            $( '.product' ).children[ 3 ].value = "--- Shipping zone ---";
-	            $( '.product' ).children[ 4 ].value = "";
-	        }
-                socket.send(JSON.stringify( subscription ));
-            }
-            if ( kind === 42196 ) {
-                var content = JSON.parse( content );
-                products.push( content );
-                if ( $_GET[ "privkey" ] ) {
-                    if ( !$( '.product' ).children[ 0 ].value ) {
-                        $( '.product' ).children[ 0 ].value = content.product;
-                        $( '.product' ).children[ 1 ].value = content.image;
-                        $( '.product' ).children[ 2 ].value = content.description;
-                        $( '.product' ).children[ 3 ].value = content.shipping_zone;
-                        $( '.product' ).children[ 4 ].value = ( content.price / 100 ).toFixed( 2 );
-                    } else {
-                    	$$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
-	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 0 ].value = content.product;
-	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 1 ].value = content.image;
-	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 2 ].value = content.description;
-	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 3 ].value = content.shipping_zone;
-	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 4 ].value = ( content.price / 100 ).toFixed( 2 );
+            if ( ( !event || event === true ) && type != "EOSE" ) return;
+            if ( subId.startsWith( "00" ) ) {
+                if ( kind === 4 ) {
+                    content = await decrypt(privKey, event.pubkey, content);
+                    if ( !isValidJson( content ) ) return;
+                    content = JSON.parse( content );
+                    if ( content.length != 2 ) return;
+                    if ( !content[ 0 ] ) return;
+                    if ( !content[ 1 ] ) return;
+                    if ( typeof content[ 0 ] != "object" ) return;
+                    if ( typeof content[ 1 ] != "object" ) return;
+                    if ( !content[ 0 ][ "whisper_key" ] && !content[ 0 ][ "pmthash" ] ) return;
+                    if ( !content[ 1 ][ 0 ] ) return;
+                    if ( typeof content[ 1 ][ 0 ] != "object" ) return;
+                    if ( !content[ 1 ][ 0 ][ "item" ] ) return;
+                    if ( !content[ 1 ][ 0 ][ "price" ] ) return;
+                    if ( !content[ 1 ][ 0 ][ "shipping_zone" ] ) return;
+                    sales.push( [ ...content, event.id, 0 ] );
+                    if ( !shipped_orders.includes( event.id ) ) {
+                        $( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) + 1;
                     }
-                    return;
                 }
-                // console.log( content );
-                var price = content[ "price" ] / 100;
-                var existing_num = $$( '.store_product' ).length;
-                var html = `
-                    <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word; margin-bottom: 1rem;">
-                        <img class="product_image" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
-                        <div class="product_name"></div>
-                        <div>$<span class="product_price"></span></div>
-                        <div style="display: none;" class="shipping_zone"></span></div>
-                        <button class="view_product_btn">View product</button>
-                        <button class="add_to_cart">Add to cart</button>
-                    </div>
-                `;
-                $( '.store_products' ).innerHTML += ( html );
-                $$( '.store_product .product_image' )[ existing_num ].src = content.image;
-                $$( '.store_product .product_name' )[ existing_num ].innerText = content.product;
-                $$( '.store_product .product_price' )[ existing_num ].innerText = price.toFixed( 2 );
-                $$( '.store_product .shipping_zone' )[ existing_num ].innerText = content.shipping_zone;
-                $$( '.add_to_cart' ).forEach( function( item ) {
-                    item.onclick = (e) => {
-                        $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
-                        cart.push({
-                            item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
-                            price: Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText ) * 100,
-                            shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,
-                        });
+                // console.log('content:', content);
+                if ( kind === 12196 ) {
+                    if ( !isValidJson( content ) ) return;
+                    content = JSON.parse( content );
+                    if ( "lnbits_secret" in content ) {
+                        if ( $_GET[ "privkey" ] ) localStorage[ "wallet_info" ] = decrypt( privKey, pubKey, content[ "lnbits_secret" ] );
                     }
-                });
-                $$( '.view_product_btn' ).forEach( function( item, index ) {
-                	item.onclick = (e) => {
-                		var c2 = products[ index ];
-                		console.log( c2 );
-                        $( '.store_products' ).style.display = "none";
-                        $( '.blank_view' ).innerHTML = `
-                            <div class="viewed_product">
-                                <div style="font-weight: bold; font-size: 3rem; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.store_products' ).style.display = 'flex';">⇦ <span style="vertical-align: middle; font-size: 1.5rem;">Back</span></div>
-                                <div style="font-weight: bold;">Product</div>
-                                <div><span class="product_name"></span></div><br>
-                                <img class="product_image" style="border: 1px solid black; width: 100%; margin: auto;"><br><br>
-                                <div style="font-weight: bold;">Price</div>
-                                <div>$<span class="product_price"></span></div><br>
-                                <div style="font-weight: bold;">Description</div>
-                                <div class="product_description"></div><br>
-                                <div style="font-weight: bold;">Ships to</div>
-                                <div class="shipping_zone"></div><br>
-                                <button class="add_to_cart">Add to cart</button>
-                            </div>
-                        `;
-                        $( '.viewed_product .product_name' ).innerText = c2.product;
-                        $( '.viewed_product .product_image' ).src = c2.image;
-                        $( '.viewed_product .product_price' ).innerText = ( c2.price / 100 ).toFixed( 2 );
-                        $( '.viewed_product .product_description' ).innerText = c2.description;
-                        $( '.viewed_product .shipping_zone' ).innerText = c2.shipping_zone;
-                        $( '.blank_view' ).style.display = "block";
-                        $$( '.add_to_cart' ).forEach( function( item ) {
-                            item.onclick = (e) => {
-                                $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
-                                cart.push({
-                                    item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
-                                    price: Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText ) * 100,
-                                    shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,                                });
-                                $( '.blank_view' ).style.display = "none";
-                                $( '.store_products' ).style.display = "flex";
-                            }
-                        });
+                    if ( "lnbits_public" in content ) {
+                        if ( $_GET[ "pubkey" ] || $_GET[ "privkey" ] ) {
+                            ln_domain = content[ "lnbits_public" ][ "domain" ];
+                            ln_readkey = content[ "lnbits_public" ][ "readkey" ];
+                        }
                     }
-                });
+                    if ( "store_name" in content ) {
+                        $( '.store_name' ).value = content[ "store_name" ];
+                        title.setState( () => title.name = content[ "store_name" ] );
+                    }
+                    $( '.title' ).style.display = "block";
+                    if ( $_GET[ "pubkey" ] ) $( '.view_store' ).style.display = "block";
+                    if ( $_GET[ "privkey" ] ) {
+                        $( '.name_instructions' ).innerText = "Manage name";
+                        $( '.product_instructions' ).innerText = "Manage products";
+                    }
+                    products = [];
+                    $( '.store_products' ).innerHTML = ``;
+                    // if ( $( '.sales_count' ) ) $( '.sales_count' ).innerText = 0;
+                    var array = event.tags[ 0 ];
+                    array.splice( 0, 1 );
+                    // console.log( array );
+                    var subId   = ( "01" + bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ) ).substring( 0, 16 );
+                    var filter  = { ids: array }
+                    var subscription = [ "REQ", subId, filter ];
+                    if ( $_GET[ "privkey" ] ) {
+                        $( '.product' ).children[ 0 ].value = "";
+                        $( '.product' ).children[ 1 ].value = "";
+                        $( '.product' ).children[ 2 ].value = "";
+                        $( '.product' ).children[ 3 ].value = "--- Shipping zone ---";
+                        $( '.product' ).children[ 4 ].value = "";
+                    }
+                    socket.send(JSON.stringify( subscription ));
+                }
+                if ( type == "EOSE" ) {
+                    if ( !$_GET[ "privkey" ] ) return;
+                    sessionStorage[ "wallet_found_if_any" ] = true;
+                }
+            }
+            if ( subId.startsWith( "01" ) ) {
+                if ( kind === 42196 ) {
+                    var content = JSON.parse( content );
+                    products.push( content );
+                    if ( $_GET[ "privkey" ] ) {
+                        if ( !$( '.product' ).children[ 0 ].value ) {
+                            $( '.product' ).children[ 0 ].value = content.product;
+                            $( '.product' ).children[ 1 ].value = content.image;
+                            $( '.product' ).children[ 2 ].value = content.description;
+                            $( '.product' ).children[ 3 ].value = content.shipping_zone;
+                            $( '.product' ).children[ 4 ].value = ( content.price / 100 ).toFixed( 2 );
+                        } else {
+                        	$$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
+    	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 0 ].value = content.product;
+    	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 1 ].value = content.image;
+    	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 2 ].value = content.description;
+    	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 3 ].value = content.shipping_zone;
+    	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 4 ].value = ( content.price / 100 ).toFixed( 2 );
+                        }
+                        return;
+                    }
+                    // console.log( content );
+                    var price = content[ "price" ] / 100;
+                    var existing_num = $$( '.store_product' ).length;
+                    var html = `
+                        <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word; margin-bottom: 1rem;">
+                            <img class="product_image" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
+                            <div class="product_name"></div>
+                            <div>$<span class="product_price"></span></div>
+                            <div style="display: none;" class="shipping_zone"></span></div>
+                            <button class="view_product_btn">View product</button>
+                            <button class="add_to_cart">Add to cart</button>
+                        </div>
+                    `;
+                    $( '.store_products' ).innerHTML += ( html );
+                    $$( '.store_product .product_image' )[ existing_num ].src = content.image;
+                    $$( '.store_product .product_name' )[ existing_num ].innerText = content.product;
+                    $$( '.store_product .product_price' )[ existing_num ].innerText = price.toFixed( 2 );
+                    $$( '.store_product .shipping_zone' )[ existing_num ].innerText = content.shipping_zone;
+                    $$( '.add_to_cart' ).forEach( function( item ) {
+                        item.onclick = (e) => {
+                            $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
+                            cart.push({
+                                item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
+                                price: Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText ) * 100,
+                                shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,
+                            });
+                        }
+                    });
+                    $$( '.view_product_btn' ).forEach( function( item, index ) {
+                    	item.onclick = (e) => {
+                    		var c2 = products[ index ];
+                    		console.log( c2 );
+                            $( '.store_products' ).style.display = "none";
+                            $( '.blank_view' ).innerHTML = `
+                                <div class="viewed_product">
+                                    <div style="font-weight: bold; font-size: 3rem; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.store_products' ).style.display = 'flex';">⇦ <span style="vertical-align: middle; font-size: 1.5rem;">Back</span></div>
+                                    <div style="font-weight: bold;">Product</div>
+                                    <div><span class="product_name"></span></div><br>
+                                    <img class="product_image" style="border: 1px solid black; width: 100%; margin: auto;"><br><br>
+                                    <div style="font-weight: bold;">Price</div>
+                                    <div>$<span class="product_price"></span></div><br>
+                                    <div style="font-weight: bold;">Description</div>
+                                    <div class="product_description"></div><br>
+                                    <div style="font-weight: bold;">Ships to</div>
+                                    <div class="shipping_zone"></div><br>
+                                    <button class="add_to_cart">Add to cart</button>
+                                </div>
+                            `;
+                            $( '.viewed_product .product_name' ).innerText = c2.product;
+                            $( '.viewed_product .product_image' ).src = c2.image;
+                            $( '.viewed_product .product_price' ).innerText = ( c2.price / 100 ).toFixed( 2 );
+                            $( '.viewed_product .product_description' ).innerText = c2.description;
+                            $( '.viewed_product .shipping_zone' ).innerText = c2.shipping_zone;
+                            $( '.blank_view' ).style.display = "block";
+                            $$( '.add_to_cart' ).forEach( function( item ) {
+                                item.onclick = (e) => {
+                                    $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
+                                    cart.push({
+                                        item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
+                                        price: Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText ) * 100,
+                                        shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,                                });
+                                    $( '.blank_view' ).style.display = "none";
+                                    $( '.store_products' ).style.display = "flex";
+                                }
+                            });
+                        }
+                    });
+                }
             }
         }
         socket.addEventListener( 'message', handleMessage );
@@ -669,15 +781,108 @@
             dmsg = decryptedMessage + decipher.final( "utf8" );
             return dmsg;
         }
+        async function getNostrNote( pubkey, kind ) {
+            var started_waiting_time = Math.floor( Date.now() / 1000 );
+            var socket = new WebSocket( relay );
+            var note = "";
+            socket.addEventListener( 'message', async function( event ) {
+                var event = JSON.parse( event.data );
+                if ( event[ 2 ] && event[ 2 ].kind == 4 && event[ 2 ].pubkey == pubKey ) {
+                    var i; for ( i=0; i<event[ 2 ].tags.length; i++ ) {
+                        if ( event[ 2 ].tags[ i ] && event[ 2 ].tags[ i ][ 1 ] ) {
+                            var recipient = event[ 2 ].tags[ i ][ 1 ];
+                            if ( recipient == pubKey ) {
+                                var decrypted_message = decrypt( privKey, event[ 2 ].pubkey, event[ 2 ].content );
+                                if ( id != event[ 2 ].id ) {
+                                    return;
+                                } else {
+                                    note = ( decrypted_message );
+                                }
+                            } else if ( event[ 2 ].pubkey == pubKey ) {
+                                note = ( decrypt( privKey, recipient, event[ 2 ].content ) );
+                            }
+                        }
+                    }
+                } else if ( event[ 2 ] && ( event[ 2 ].kind == kind ) && event[ 2 ].pubkey == pubKey ) {
+                    var sig = event[ 2 ].sig;
+                    var eventData = JSON.stringify([
+                        0,                    // Reserved for future use
+                        event[ 2 ]['pubkey'],        // The sender's public key
+                        event[ 2 ]['created_at'],    // Unix timestamp
+                        event[ 2 ]['kind'],        // Message “kind” or type
+                        event[ 2 ]['tags'],        // Tags identify replies/recipients
+                        event[ 2 ]['content']        // Your note contents
+                    ]);
+                    var id  = sha256( eventData ).toString( 'hex' );
+                    var pubKeyPlusOne = ( BigInt( "0x" + pubKey ) + BigInt( "0x" + pubKey ) ).toString( 16 ).substring( 0, 64 );
+                    var valid = await nobleSecp256k1.schnorr.verify( sig, id, pubKey );
+                    if ( valid ) note = ( event[ 2 ].content );
+                }
+            });
+            socket.addEventListener( 'open', function open() {
+                var randomid = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
+                var filter = {
+                    "#p": [
+                        pubkey
+                    ]
+                }
+                var subscription = [ "REQ", randomid, filter ];
+                subscription = JSON.stringify( subscription );
+                var chaser = [ "CLOSE", randomid ];
+                chaser = JSON.stringify( chaser );
+                socket.send( subscription );
+                setTimeout( function() {socket.send( chaser );}, 1000 );
+                setTimeout( function() {socket.close();}, 2000 );
+            });
+            async function isNoteSetYet( note_i_seek ) {
+                return new Promise( function( resolve, reject ) {
+                    if ( !note_i_seek ) {
+                        var current_time = Math.floor( Date.now() / 1000 );
+                        if ( started_waiting_time + 5 < current_time ) {
+                            //resolve( "time is up" );
+                        }
+                        setTimeout( async function() {
+                            var msg = await isNoteSetYet( note );
+                            resolve( msg );
+                        }, 100 );
+                    } else {
+                        resolve( note_i_seek );
+                    }
+                });
+            }
+            async function getTimeoutData() {
+                var note_i_seek = await isNoteSetYet( note );
+                return note_i_seek;
+            }
+            var returnable = await getTimeoutData();
+            return returnable;
+        }
+    </script>
+    <script>
+        async function ensureWalletIsAvailable() {
+            //check if user has a wallet stored in local storage
+            var userHasLocalWallet;
+            if ( localStorage[ "wallet_info" ] ) userHasLocalWallet = true;
+            if ( userHasLocalWallet ) return;
+            // if they do not, make a lightning wallet for them
+            var wallet_info = await makeLNWallet( pubKey.substring( 0, 15 ) );
+            // I used to store it on nostr here but now I wait til
+            // they create a store and then store it in the store info
+            localStorage[ "wallet_info" ] = JSON.stringify( wallet_info );
+            // get invoice: postData( "https://legend.lnbits.com/api/v1/payments", '{"out": false, "amount": 1000}', content_type = "application/json", apikey = "6eafd20149f6491baa61166faba0d9dc" );
+            //check invoice: getData( "https://legend.lnbits.com/api/v1/payments/a89f4279b098fa4e6254798619902f3a1bfb3adeabe4006284d842075442d1bf", "application/json", "6eafd20149f6491baa61166faba0d9dc" );
+        }
     </script>
 </head>
 <body>
-    <h1>Welcome to superstore, a simple bitcoin webstore</h1>
+    <div class="title"></div>
     <div class="splash_screen">Loading...</div>
     <div class="make_store">
         <div class="products">
             <div class="manage_sales_toolbar"></div>
-            <h2>Add products</h2>
+            <h2 class="name_instructions">Add a name</h2>
+            <input class="store_name">
+            <h2 class="product_instructions">Add products</h2>
             <div class="product">
                 <input placeholder="product name"><input placeholder="image url"><textarea placeholder="description" class="desc"></textarea><select placeholder="shipping zone"><option>--- Shipping zone ---</option><option>Free (digital)</option><option>Worldwide</option><option>Europe</option><option>Australia</option><option>Austria</option><option>Belgium</option><option>Brazil</option><option>Canada</option><option>Denmark</option><option>Finland</option><option>France</option><option>Germany</option><option>Greece</option><option>Hong Kong</option><option>Hungary</option><option>Ireland</option><option>Indonesia</option><option>Israel</option><option>Italy</option><option>Japan</option><option>Kazakhstan</option><option>Korea</option><option>Luxembourg</option><option>Malaysia</option><option>Mexico</option><option>Netherlands</option><option>New Zealand</option><option>Norway</option><option>Poland</option><option>Portugal</option><option>Russia</option><option>Saudi Arabia</option><option>Singapore</option><option>Spain</option><option>Sweden</option><option>Switzerland</option><option>Thailand</option><option>Turkey</option><option>Ukraine</option><option>United Kingdom</option><option>United States</option><option>Vietnam</option><option>China</option></select><input placeholder="usd price (e.g. 5.99)" class="price" type="number" step="0.01" min="0"><button class="preview">Product preview</button><button class="plus_and_minus">Add another product</button>
             </div>
@@ -691,6 +896,31 @@
     </div>
     <div class="blank_view"></div>
     <script>
+        if ( !$_GET[ "pubkey" ] && !$_GET[ "privkey" ] ) $( '.title' ).style.display = "block";
+        $( '.store_name' ).value = "";
+        var title = {
+          html: () => {
+            var default_name = "Welcome to superstore, a simple bitcoin webstore";
+            var name = title.name ? title.name : default_name;
+            return `
+              <h1>
+                ${name}
+              </h1>
+            `;
+          },
+          name: "",
+          setState: (callback) => {
+            callback();
+            title.render();
+          },
+          render: () => {
+            $( ".title" ).innerHTML = title.html();
+          }
+        };
+        title.render();
+        $( '.store_name' ).onkeyup = () => {
+            title.setState( () => title.name = $( '.store_name' ).value );
+        }
         if ( $_GET[ "pubkey" ] ) {$( '.products' ).style.display = "none";$( '.store_maker' ).style.display = "none";}
         var cart = [];
         $$( '.price' ).forEach( function( item, index ) {
@@ -798,10 +1028,16 @@
                 await waitSomeSeconds( 1 );
             }
             console.log( "product ids:", product_ids );
-            var payment_methods = {}
-            payment_methods[ "whisper_address_linking_key" ] = original_pubkey;
+            var store_info = {}
+            store_info[ "whisper_address_linking_key" ] = original_pubkey;
+            await ensureWalletIsAvailable();
+            var domain = JSON.parse( localStorage[ "wallet_info" ] )[ "wallet_url" ].substring( 0, JSON.parse( localStorage[ "wallet_info" ] )[ "wallet_url" ].indexOf( "/wallet" ) );
+            var readkey = JSON.parse( localStorage[ "wallet_info" ] )[ "readkey" ];
+            store_info[ "lnbits_public" ] = {domain, readkey}
+            store_info[ "lnbits_secret" ] = encrypt( privKey, pubKey, localStorage[ "wallet_info" ] );
+            store_info[ "store_name" ] = $( '.title' ).innerText;
             var event = {
-                "content"    : JSON.stringify( payment_methods ),
+                "content"    : JSON.stringify( store_info ),
                 "created_at" : Math.floor( Date.now() / 1000 ),
                 "kind"       : 12196,
                 "tags"       : [ [ "products", ...product_ids ] ],
@@ -859,11 +1095,33 @@
                 $( '.blank_view' ).innerHTML = `
                     <div style="font-weight: bold; font-size: 3rem; cursor: pointer;" onclick="renderCart();">⇦ <span style="vertical-align: middle; font-size: 1.5rem;">Back</span></div>
                     <h2>Checkout</h2>
-                    Please send ${dollarsToSats( ( total / 100 ).toFixed( 2 ) )} sats and wait for your auto-generated receipt (your shipment is not guaranteed til you have your receipt)
-                    <br>
+                    Please send <span class="sats_to_pay">${dollarsToSats( ( total / 100 ).toFixed( 2 ) )}</span> sats and wait for your auto-generated receipt (your shipment is not guaranteed til you have your receipt)
+                    <br><br>
+                    <div class="payment_box"></div>
                 `;
-                $( '.blank_view' ).append( createQR( whisper_address ) );
-                $( '.blank_view' ).append( whisper_address );
+                if ( ln_domain && ln_readkey ) {
+                    $( '.payment_box' ).innerHTML += `
+                        <div style="display: flex;justify-content: center;">
+                            <button class="ln_button">Lightning</button>
+                            <button class="bl_button">Base layer</button>
+                        </div>
+                        <div class="ln_box"></div>
+                    `;
+                    $( '.bl_button' ).onclick = () => {
+                        $( '.bl_box' ).style.display = "block";
+                        $( '.ln_box' ).style.display = "none";
+                    }
+                    $( '.ln_button' ).onclick = async () => {
+                        $( '.bl_box' ).style.display = "none";
+                        $( '.ln_box' ).style.display = "block";
+                    }
+                    getInvoice( total );
+                }
+                var div = document.createElement( "div" );
+                div.className = "bl_box";
+                $( '.payment_box' ).append( div );
+                $( '.bl_box' ).append( createQR( whisper_address ) );
+                $( '.bl_box' ).append( whisper_address );
                 var was_it_stopped = await loopTilAddressReceivesMoney( whisper_address, mempoolNetwork );
                 if ( was_it_stopped == "stopped" ) return;
                 await waitSomeSeconds( 2 );
@@ -901,11 +1159,59 @@
             }
         }
         $( '.view_cart' ).onclick = renderCart;
+        var getInvoice = async ( total ) => {
+            var invoice_data = await postData( `${ln_domain}/api/v1/payments`, `{"out": false, "amount": ${Number( $( '.sats_to_pay' ).innerText )}}`, "application/json", ln_readkey );
+            $( '.ln_box' ).append( createQR( JSON.parse( invoice_data )[ "payment_request" ] ) );
+            $( '.ln_box' ).append( JSON.parse( invoice_data )[ "payment_request" ] );
+            await loopTilInvoiceIsPaid( JSON.parse( invoice_data )[ "payment_hash" ] );
+            var buyer_info = {}
+            buyer_info[ "pmthash" ] = JSON.parse( invoice_data )[ "payment_hash" ];
+            if ( sessionStorage.edelivery_form ) buyer_info[ "edelivery_info" ] = sessionStorage.edelivery_form;
+            if ( sessionStorage.shipping_label_form ) buyer_info[ "shipping_info" ] = sessionStorage.shipping_label_form;
+            var message = JSON.stringify( [ buyer_info, [...cart] ] );
+            var encrypted = encrypt( privKey, $_GET[ "pubkey" ].substring( 2 ), message );
+            var event = {
+                "content"    : encrypted,
+                "created_at" : Math.floor( Date.now() / 1000 ),
+                "kind"       : 4,
+                "tags"       : [ [ 'p', $_GET[ "pubkey" ].substring( 2 ) ] ],
+                "pubkey"     : pubKey,
+            }
+            var signedEvent = await getSignedEvent(event, privKey);
+            socket.send( JSON.stringify([ "EVENT", signedEvent ]) );
+            console.log( "make sure this gets to the relay:", JSON.stringify([ "EVENT", signedEvent ]) );
+            await waitSomeSeconds( 2 );
+            sessionStorage.removeItem( "modal_cleared" );
+            var receipt_items = ``;
+            cart.forEach( function( item, index ) {
+                receipt_items += `<div>Item: ${item[ "item" ]} | Price: $${( item[ "price" ] / 100 ).toFixed( 2 )}</div>`;
+            });
+            cart = [];
+            if ( $( '.minicart_item_count' ) ) $( '.minicart_item_count' ).innerText = 0;
+            var content = `<p>Thank you for your business. Here is your receipt:</p><p style="font-weight: bold;">Items purchased</p>${receipt_items}<p>Total: $${( total / 100 ).toFixed( 2 )}</p><p>Proof of payment: ${buyer_info[ "pmthash" ]}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
+            showModal( content, true );
+            await getNote( "modal_cleared" );
+        }
+        var checkInvoice = async ( pmthash ) => {
+            var status = await getData( `${ln_domain}/api/v1/payments/${pmthash}`, "application/json", ln_readkey );
+            status = JSON.parse( status );
+            return status;
+        }
+        var loopTilInvoiceIsPaid = async ( pmthash ) => {
+            var status = await checkInvoice( pmthash );
+            if ( !status[ "paid" ] ) {
+                await waitSomeSeconds( 2 );
+                console.log( "waiting..." );
+                return loopTilInvoiceIsPaid( pmthash );
+            } else {
+                return true;
+            }
+        }
     </script>
     <script>
         async function openConnection() {
             console.log( "connected to " + relay );
-            var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
+            var subId   = ( "00" + bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ) ).substring( 0, 16 );
             if ( $_GET[ "pubkey"] ) {
                 var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196 ] }
                 var subscription = [ "REQ", subId, filter ];
@@ -916,6 +1222,35 @@
                 var subscription = [ "REQ", subId, filter, filter2 ];
             }
             socket.send(JSON.stringify( subscription ));
+            //I decided to pull in my wallet when I get my 12196 event, only
+            //there are two problems with that: first, in its current position,
+            //it will check if I have a wallet (and potentially make a new one)
+            //*before* getting my 12196 event, and second, I have to think of
+            //where to move it. If I move it *inside* the function that gets
+            //my 12196 event, it won't fire when someone is first creating a
+            //store, because I only reach out for a 12196 event if the user
+            //is viewing or managing an existing store -- and if I just move
+            //it to *after* the part where they request my 12196 event, which
+            //I might do so that it waits to make a wallet til after one has
+            //been found, I will still have to ensure that it runs *after* my
+            //12196 event (if any) has been found -- which might be hard since
+            //that can take a variable amount of time
+            //so the solution is: make a function that checks if I am getting
+            //a 12196 event, which is the same thing as checking if there is a
+            //url query parameter of privkey or pubkey; if there is not, it
+            //should immediately run ensureWalletIsAvailable, otherwise it
+            //should wait for some variable to be marked true (one that I mark
+            //true when I get a result after searching nostr for my 12196
+            //event) and *then* run ensureWalletIsAvailable -- and this
+            //function should run when I connect to a relay, otherwise the
+            //ensureWalletIsAvailable function might not work, since it
+            //sometimes has to send a message to a relay
+            if ( !$_GET[ "pubkey" ] && !$_GET[ "privkey" ] ) {
+                ensureWalletIsAvailable();
+            } else {
+                await getNote( "wallet_found_if_any" );
+                ensureWalletIsAvailable();
+            }
         }
         socket.addEventListener( 'open', openConnection );
         if ( $_GET[ "pubkey" ] ) {
@@ -926,30 +1261,53 @@
             var combokey = getCompressedPubkeyHexFromUncompressedPubkeyHex( add2Pubkeys( linking_pubkey, whisper_pubkey ) );
             var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
             $( '.make_store' ).style.display = "none";
-            $( '.view_store' ).style.display = "block";
         }
         if ( $_GET[ "privkey" ] ) {
             var html = `<div class="minicart"><span class="sales_count">0</span> new sales <button class="manage_sales_btn">Manage sales</button></div>`;
             $( '.manage_sales_toolbar' ).innerHTML = html;
-            var manageSales = () => {
+            var manageSales = async () => {
                 $( '.products' ).style.display = "none";
                 $( '.store_maker' ).parentElement.style.display = "none";
                 $( '.blank_view' ).style.display = "block";
                 $( '.blank_view' ).innerHTML = `
                     <div>
                         <div style="font-weight: bold; font-size: 3rem; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.products' ).style.display = 'block';$( '.store_maker' ).parentElement.style.display = 'block';">⇦ <span style="vertical-align: middle; font-size: 1.5rem;">Back</span></div>
-                        <div style="font-weight: bold;">Wallet</div><br>
-                        <div class="wallet" style="display: flex;justify-content: space-between;background-color: orange;padding: 0.5rem;align-items: center;"><div>Balance: $<span class="usd_balance">0.00</span> (<span class="btc_balance">0</span> sats)</div><div><button class="withdraw">Withdraw</button></div></div><br>
+                        <div style="display: flex; flex-wrap: wrap; justify-content: space-between;"><div style="font-weight: bold;">Wallet</div><button class="connect_node">Connect your node</button></div><br>
+                        <div class="wallet" style="display: flex;justify-content: space-between;background-color: orange;padding: 0.5rem;align-items: center;"><div>Base layer balance: $<span class="usd_balance">0.00</span> (<span class="btc_balance">0</span>&nbsp;sats)</div><div><button class="withdraw">Withdraw</button></div></div><br>
+                `;
+                if ( ln_domain && ln_readkey ) $( '.blank_view' ).innerHTML += `                
+                        <div class="ln_wallet" style="display: flex;justify-content: space-between;background-color: lightblue;padding: 0.5rem;align-items: center;"><div>Lightning balance: $<span class="usd_balance">0.00</span> (<span class="btc_balance">0</span>&nbsp;sats)</div><div><button class="withdraw">Manage</button></div></div><br>
+                `;
+                if ( ln_domain && ln_readkey ) {
+                    var ln_balance = await getLNBalance();
+                    $$( '.btc_balance' )[ 1 ].innerText = ln_balance;
+                    $$( '.usd_balance' )[ 1 ].innerText = satsToDollars( ln_balance ).toFixed( 2 );
+                }
+                $( '.blank_view' ).innerHTML += `
                         <div style="font-weight: bold;">Sales</div><br>
                         <div class="orders"></div>
                     </div>
                 `;
+                $( '.connect_node' ).onclick = async () => {
+                    alert( "This button doesn't do anything yet -- coming soon!" );
+                }
                 sales.forEach( async function( sale, index ) {
-                    var whisper_key = sale[ 0 ][ "whisper_key" ];
-                    var privkey = addKeys( privKey, whisper_key );
-                    var combokey = getCompressedPubkeyHexFromPrivkeyHex( privkey );
-                    var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
-                    var txinfo = await addressReceivedMoneyInThisTx( whisper_address, mempoolNetwork );
+                    if ( "whisper_key" in sale[ 0 ] ) {
+                        var whisper_key = sale[ 0 ][ "whisper_key" ];
+                        var privkey = addKeys( privKey, whisper_key );
+                        var combokey = getCompressedPubkeyHexFromPrivkeyHex( privkey );
+                        var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
+                        var txinfo = await addressReceivedMoneyInThisTx( whisper_address, mempoolNetwork );
+                    }
+                    if ( "pmthash" in sale[ 0 ] ) {
+                        var status = await checkInvoice( sale[ 0 ][ "pmthash" ] );
+                        var txinfo = [];
+                        txinfo[ 0 ] = sale[ 0 ][ "pmthash" ];
+                        txinfo[ 1 ] = 0;
+                        txinfo[ 2 ] = Number( ( status[ "details" ][ "amount" ] / 1000 ).toFixed( 0 ) );
+                        //the following line helps me determine later that it is a lightning payment
+                        txinfo[ 3 ] = true;
+                    }
                     if ( $_GET[ "debug" ] == "true" || !txinfo[ 0 ] ) {
 	                    if ( !txinfo[ 0 ] ) txinfo[ 0 ] = "abababababababababababababababababababababababababababababababab";
 	                    if ( !txinfo[ 1 ] ) txinfo[ 1 ] = 0;
@@ -975,14 +1333,21 @@
 	                    if ( !txinfo[ 1 ] ) txinfo[ 1 ] = 0;
                     	txinfo[ 2 ] = 0;
                     }
-                    console.log( "txinfo:", txinfo );
                     var address_balance = txinfo[ 2 ];
                     // var address_balance = await getAddressBalance( whisper_address, mempoolNetwork );
                     var balance_in_dollars = satsToDollars( address_balance ).toFixed( 2 );
                     if ( balance_in_dollars == "0.00" && !sale[ 3 ] ) return;
-                    $( '.btc_balance' ).innerText = Number( $( '.btc_balance' ).innerText ) + address_balance;
-                    $( '.usd_balance' ).innerText = satsToDollars( Number( $( '.btc_balance' ).innerText ) ).toFixed( 2 );
-                    if ( !private_keys.includes( privkey ) ) private_keys.push( privkey );
+                    if ( !txinfo[ 3 ] ) {
+                        $$( '.btc_balance' )[ 0 ].innerText = Number( $$( '.btc_balance' )[ 0 ].innerText ) + address_balance;
+                    } else {
+                        // $$( '.btc_balance' )[ 1 ].innerText = Number( $$( '.btc_balance' )[ 1 ].innerText ) + address_balance;
+                    }
+                    if ( !txinfo[ 3 ] ) {
+                        $$( '.usd_balance' )[ 0 ].innerText = satsToDollars( Number( $$( '.btc_balance' )[ 0 ].innerText ) ).toFixed( 2 );
+                    } else {
+                        // $$( '.usd_balance' )[ 1 ].innerText = satsToDollars( Number( $$( '.btc_balance' )[ 1 ].innerText ) ).toFixed( 2 );
+                    }
+                    if ( !private_keys.includes( privkey ) && !txinfo[ 3 ] ) private_keys.push( privkey );
                     var bgcolor = "pink";
                     var shipped_instructions = "click when shipped";
                     if ( sale[ 3 ] ) {
@@ -1001,9 +1366,17 @@
                     if ( sale[ 3 ] ) paid_amount = ( total / 100 ).toFixed( 2 );
                     var delivery_info = (sale[ 0 ][ "shipping_info" ]) ? sale[ 0 ][ "shipping_info" ]:sale[ 0 ][ "edelivery_info" ];
                     var order = `
-                        <div class="minicart order" style="background-color: ${bgcolor}; display: flex; justify-content: space-between; text-align: left;"><div>Delivery info:<br><div class="delivery_info"></div></div><div style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );">${shipped_instructions}</button></div></div>
-                        <div style="display: none; border: 1px solid black; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem;"><div style="font-weight: bold;">Details</div><br>${items}<div style="text-align: right;">Total they owed: $${( total / 100 ).toFixed( 2 )}</div><div style="text-align: right;">Total they paid: $${paid_amount}</div><div style="text-align: right;"><a href="https://mempool.space/${mempoolNetwork}tx/${txinfo[ 0 ]}:${txinfo[ 1 ]}" target="_blank">Inspect transaction</a></div></div>
+                        <div class="minicart order" style="background-color: ${bgcolor};"><div>Delivery info:<br><div class="delivery_info"></div></div><div class="payment_info" style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );">${shipped_instructions}</button></div></div>
                     `;
+                    if ( !txinfo[ 3 ] ) {
+                        order += `
+                            <div style="display: none; border: 1px solid black; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem;"><div style="font-weight: bold;">Details</div><br>${items}<div style="text-align: right;">Total they owed: $${( total / 100 ).toFixed( 2 )}</div><div style="text-align: right;">Total they paid: $${paid_amount}</div><div style="text-align: right;"><a href="https://mempool.space/${mempoolNetwork}tx/${txinfo[ 0 ]}:${txinfo[ 1 ]}" target="_blank">Inspect transaction</a></div></div>
+                        `;
+                    } else {
+                        order += `
+                            <div style="display: none; border: 1px solid black; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem;"><div style="font-weight: bold;">Details</div><br>${items}<div style="text-align: right;">Total they owed: $${( total / 100 ).toFixed( 2 )}</div><div style="text-align: right;">Total they paid: $${paid_amount}</div><div style="text-align: right;"><a href="${JSON.parse( localStorage.wallet_info )[ "wallet_url" ]}" target="_blank">Inspect transaction</a></div></div>
+                        `;
+                    }
                     $( '.orders' ).innerHTML += order;
                     $$( '.delivery_info' )[ $$( '.delivery_info' ).length - 1 ].innerText = delivery_info;
                     var existing_number = $$( '.blank_view .minicart .product_name' ).length;
@@ -1015,7 +1388,7 @@
                         $$( '.blank_view .minicart .product_price' )[ existing_number - ( names_and_prices.length - index ) ].innerText = "$" + ( item[ 1 ] / 100 ).toFixed( 2 )
                     });
                 });
-                $( '.withdraw' ).onclick = async () => {
+                $$( '.withdraw' )[ 0 ].onclick = async () => {
                     var some_unshipped_items = false;
                     sales.forEach( function( sale ) {
                         if ( !sale[ 3 ] ) some_unshipped_items = true;
@@ -1063,6 +1436,9 @@
                     console.log( "raw tx:", txhex );
                     await waitSomeSeconds( 2 );
                     $( '.manage_sales_btn' ).click();
+                }
+                $$( '.withdraw' )[ 1 ].onclick = async () => {
+                    window.open( JSON.parse( localStorage[ "wallet_info" ] )[ "wallet_url" ], '_blank' );
                 }
             }
             $( '.manage_sales_btn' ).onclick = manageSales;
