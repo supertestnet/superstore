@@ -275,12 +275,12 @@
             return price;
         }
 
-        async function getBitcoinPriceFromBybit() {
-            var data = await getData( "https://api-testnet.bybit.com/derivatives/v3/public/order-book/L2?category=linear&symbol=BTCUSDT" );
-            if ( data == "error" ) return 0;
-            var json = JSON.parse( data );
-            var price = json[ "result" ][ "b" ][ 0 ][ 0 ];
-            return price;
+        async function getBitcoinPriceFromCoinGecko() {
+                var data = await getData( "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&precision=2" );
+                if ( data == "error" ) return 0;
+                var json = JSON.parse( data );
+                var price = json[ "bitcoin" ][ "usd" ];
+                return price;
         }
 
         async function getBitcoinPrice() {
@@ -289,8 +289,8 @@
             var kprice = await getBitcoinPriceFromKraken();
             var cdprice = await getBitcoinPriceFromCoindesk();
             var gprice = await getBitcoinPriceFromGemini();
-            var bprice = await getBitcoinPriceFromBybit();
-            prices.push( Number( cbprice ), Number( kprice ), Number( cdprice ), Number( gprice ), Number( bprice ) );
+            var cgprice = await getBitcoinPriceFromCoinGecko();
+            prices.push( Number( cbprice ), Number( kprice ), Number( cdprice ), Number( gprice ), Number( cgprice ) );
             prices.sort();
             console.log( prices );
             return prices[ 2 ];
@@ -588,7 +588,20 @@
                     if ( !content[ 1 ][ 0 ][ "price" ] ) return;
                     if ( !content[ 1 ][ 0 ][ "shipping_zone" ] ) return;
                     sales.push( [ ...content, event.id, 0 ] );
-                    if ( !shipped_orders.includes( event.id ) ) {
+                    if ( content[ 0 ][ "whisper_key" ] ) {
+                        var whisper_key = content[ 0 ][ "whisper_key" ];
+                        var privkey = addKeys( privKey, whisper_key );
+                        var combokey = getCompressedPubkeyHexFromPrivkeyHex( privkey );
+                        var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
+                        var current_utxos = await getUTXOs( privkey, mempoolNetwork );
+                        var current_balance = 0;
+                        current_utxos.forEach( function( utxo ) {
+                            current_balance = current_balance + Number( utxo[ "amount" ] );
+                        });
+                    } else {
+                        var current_balance = 1;
+                    }
+                    if ( !shipped_orders.includes( event.id ) && current_balance ) {
                         $( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) + 1;
                     }
                 }
@@ -889,6 +902,14 @@
         </div>
         <p><button class="store_maker">Submit</button></p>
         <div class="preview_pane"></div>
+        <div class="progress" style="display: none;">
+            <h2>Progress bar <span id="goal" style="font-size: .8em; font-weight: normal;"></span></h2>
+            <div class="progressOutline" style="height: 2em; border: 1px solid grey; border-radius: 25px; overflow: hidden;">
+                <div class="progressBar" style="height: 2em; background-color: #61eb34; width: 0%; transition: width 1s;">
+                </div>
+            </div>
+            <div class="status"></div>
+        </div>
     </div>
     <div class="view_store">
         <div class="minicart">Cart (<span class="minicart_item_count">0</span> items) <button class="view_cart">View cart</button></div>
@@ -994,6 +1015,7 @@
             $( '.preview_pane' ).innerHTML = html;
         }
         $( '.store_maker' ).onclick = async () => {
+            $( '.progress' ).style.display = "block";
             var i; for ( i=0; i<$$( 'select' ).length; i++ ) {
                 var item = $$( 'select' )[ i ];
                 if ( item.value.includes( "---" ) ) {
@@ -1026,6 +1048,9 @@
                 product_ids.push( signedEvent.id );
                 socket.send(JSON.stringify([ "EVENT", signedEvent ]));
                 await waitSomeSeconds( 1 );
+                var percent = String( Math.floor( ( i + 1 / $$( '.product' ).length ) * 100 ) ) + "%";
+                $( '.progressBar' ).style.width = percent;
+                $( '.status' ).innerText = String( ( i + 1 ) ) + " out of " + String( $$( '.product' ).length ) + " products created";
             }
             console.log( "product ids:", product_ids );
             var store_info = {}
@@ -1090,6 +1115,10 @@
             $( '.view_store' ).style.display = "none";
             $( '.blank_view' ).style.display = "block";
             $( '.checkout' ).onclick = async () => {
+                if ( ( $( '.shipping_label_form' ) && !$( '.shipping_label_form' ).value ) || ( $( '.edelivery_form' ) && !$( '.edelivery_form' ).value ) ) {
+                    alert( "You forgot to enter delivery instructions, please do so and click the checkout button again" );
+                    return;
+                }
                 if ( $( '.shipping_label_form' ) ) sessionStorage.shipping_label_form = $( '.shipping_label_form' ).value;
                 if ( $( '.edelivery_form' ) ) sessionStorage.edelivery_form = $( '.edelivery_form' ).value;
                 $( '.blank_view' ).innerHTML = `
@@ -1298,6 +1327,17 @@
                         var combokey = getCompressedPubkeyHexFromPrivkeyHex( privkey );
                         var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
                         var txinfo = await addressReceivedMoneyInThisTx( whisper_address, mempoolNetwork );
+                        //if the address *currently* has less money than it originally held
+                        //then the order was shipped
+                        var current_utxos = await getUTXOs( privkey, mempoolNetwork );
+                        var current_balance = 0;
+                        current_utxos.forEach( function( utxo ) {
+                            current_balance = current_balance + Number( utxo[ "amount" ] );
+                        });
+                        if ( txinfo[ 2 ] > current_balance ) {
+                            txinfo[ 2 ] = current_balance;
+                            sale[ 3 ] = 1;
+                        }
                     }
                     if ( "pmthash" in sale[ 0 ] ) {
                         var status = await checkInvoice( sale[ 0 ][ "pmthash" ] );
@@ -1363,6 +1403,9 @@
                         names_and_prices.push( [ item[ "item" ], item[ "price" ] ] );
                     });
                     var paid_amount = balance_in_dollars;
+                    //if the item is shipped, display the amount as paid even if the address is empty
+                    //because the address probably *is* empty -- that just means the merchant withdrew
+                    //the money
                     if ( sale[ 3 ] ) paid_amount = ( total / 100 ).toFixed( 2 );
                     var delivery_info = (sale[ 0 ][ "shipping_info" ]) ? sale[ 0 ][ "shipping_info" ]:sale[ 0 ][ "edelivery_info" ];
                     var order = `
@@ -1437,7 +1480,7 @@
                     await waitSomeSeconds( 2 );
                     $( '.manage_sales_btn' ).click();
                 }
-                $$( '.withdraw' )[ 1 ].onclick = async () => {
+                if ( $$( '.withdraw' )[ 1 ] ) $$( '.withdraw' )[ 1 ].onclick = async () => {
                     window.open( JSON.parse( localStorage[ "wallet_info" ] )[ "wallet_url" ], '_blank' );
                 }
             }
