@@ -979,6 +979,7 @@
             button.onclick = (e) => {
                 var price = Number( e.target.parentElement.children[ 4 ].value );
                 var html = `
+                    <h2>Preview pane</h2>
                     <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word;">
                         <img src="${e.target.parentElement.children[ 1 ].value}" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
                         <div>${e.target.parentElement.children[ 0 ].value}</div>
@@ -1015,6 +1016,7 @@
         $( '.preview' ).onclick = (e) => {
             var price = Number( e.target.parentElement.children[ 4 ].value );
             var html = `
+                <h2>Preview pane</h2>
                 <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word;">
                     <img src="${e.target.parentElement.children[ 1 ].value}" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
                     <div>${e.target.parentElement.children[ 0 ].value}</div>
