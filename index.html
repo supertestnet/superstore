@@ -113,6 +113,12 @@
             justify-content: space-between;
             text-align: left;
         }
+        .public_link {
+            display: none;
+        }
+        .store_name {
+            margin-top: 1rem;
+        }
         @media screen and (max-width: 600px) {
             .product input, .product select, .product textarea {
                 width: calc( 100% );
@@ -627,6 +633,8 @@
                     if ( $_GET[ "privkey" ] ) {
                         $( '.name_instructions' ).innerText = "Manage name";
                         $( '.product_instructions' ).innerText = "Manage products";
+                        $( '.public_link' ).style.display = "inline";
+                        $( '.public_link' ).href = window.location.protocol + "//" + window.location.hostname + window.location.pathname + `?pubkey=${original_pubkey}`;
                     }
                     products = [];
                     $( '.store_products' ).innerHTML = ``;
@@ -893,7 +901,10 @@
     <div class="make_store">
         <div class="products">
             <div class="manage_sales_toolbar"></div>
-            <h2 class="name_instructions">Name your store</h2>
+            <div style="display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center;">
+                <h2 class="name_instructions">Name your store</h2>
+                <a class="public_link" target="_blank"><button>View store</button></a>
+            </div>
             <input class="store_name">
             <h2 class="product_instructions">Add products</h2>
             <div class="product">
@@ -1296,6 +1307,7 @@
             $( '.manage_sales_toolbar' ).innerHTML = html;
             var manageSales = async () => {
                 $( '.products' ).style.display = "none";
+                $( '.preview_pane' ).style.display = "none"
                 $( '.store_maker' ).parentElement.style.display = "none";
                 $( '.blank_view' ).style.display = "block";
                 $( '.blank_view' ).innerHTML = `
