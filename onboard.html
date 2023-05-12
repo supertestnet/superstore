@@ -32,7 +32,8 @@
                 font-size: 1.15rem;
                 border: 1px solid grey;
             }
-            .onboard {
+            .signup {
+                display: none;
                 border: 1px solid black;
                 border-radius: 1rem;
                 padding: 1rem;
@@ -57,6 +58,33 @@
                 color: blue;
                 text-decoration: underline;
                 cursor: pointer;
+            }
+            .black-bg {
+                display: none;
+                width: 100%;
+                position: fixed;
+                top: 0;
+                left: 0;
+                background-color: black;
+                opacity: .5;
+                width: 100vw;
+                height: 100vh;
+            }
+            .modal {
+                display: none;
+                position: fixed;
+                box-sizing: border-box;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%,-50%);
+                width: 90%;
+                max-width: 560px;
+                background-color: white;
+                border-radius: 1rem;
+                padding: 20px;
+                color: black;
+                text-align: center;
+                word-wrap: break-word;
             }
             @media screen and (max-width: 600px) {
             }
@@ -90,31 +118,41 @@
                 var text = new TextDecoder().decode( bytes );
                 return text;
             }
+            function modalVanish() {
+                $( ".black-bg" ).style.display = "none";
+                $( ".modal" ).style.display = "none";
+            }
+            function showModal( content, block_til_clear ) {
+                if ( block_til_clear ) var fn = `modalVanish();sessionStorage[ 'modal_cleared' ] = true;`; else var fn = `modalVanish();`;
+                $( ".modal" ).innerHTML = `<div style="position: absolute;right: 1rem;top: 0.5rem;font-size: 2rem; cursor: pointer;" onclick="${fn}">&times;</div>`;
+                $( ".modal" ).innerHTML += `<div style="overflow-y: scroll; max-height: 80vh; margin-top: 1.5rem;">${content}</div>`;
+                $( ".black-bg" ).style.display = "block";
+                $( ".modal" ).style.display = "block";
+            }
         </script>
     </head>
     <body>
         <h1>Welcome to Magic Webstore 🪄</h1>
-        <div class="onboard">
+        <div style="text-align: right; margin-bottom: 1rem;"><button class="signup_btn">Sign&nbsp;up</button>&nbsp;<button class="login_btn">Log&nbsp;in</button></div>
+        <div class="signup">
             <div style="text-align: center;">
-                Here is a fresh, new magic string<br>
-                (or you can <span class="blue" onclick="useString()">use an existing one</span>)
+                Magic Webstore does not use traditional usernames and passwords, instead it uses magic strings. Make sure to back yours up! Your magic string is the only way to access your store.<br>
             </div>
-            <div style="text-align: center; word-wrap: break-word; padding: 1rem; border: 1px solid black; margin-top: 1rem;" class="magic_string"></div>
+            <div style="text-align: center; word-wrap: break-word; padding: 1rem; border: 1px solid black; margin-top: 1rem; display: none;" class="magic_string"></div>
             <div class="row">
                 <div class="circle"><div>1</div></div>
-                <div class="instruction">Back up your magic string</div>
+                <div class="instruction"><span class="blue" onclick="genString()">Generate</span> your magic string</div>
             </div>
             <div class="row">
                 <div class="circle"><div>2</div></div>
-                <div class="instruction"><span class="blue" onclick="useString()">Log in</span> with your magic string</div>
+                <div class="instruction"><span class="blue" onclick="backupString()">Back up</span> your magic string</div>
             </div>
             <div class="row">
                 <div class="circle"><div>3</div></div>
-                <div class="instruction">Create and share your store</div>
+                <div class="instruction"><span class="blue" onclick="useString()">Log in</span> with your magic string</div>
             </div>
         </div>
         <script>
-            $( '.magic_string' ).innerText = bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ) + textToHex( JSON.stringify( relays ) );
             var useString = () => {
                 var ms = prompt( "Please enter your magic string" );
                 if ( !ms ) return;
@@ -125,28 +163,60 @@
                 var url = window.location.protocol + "//" + window.location.hostname + window.location.pathname.substring( 0, index ) + extra_slash + "index.html?privkey=" + privkey + "&relays=" + encodeURI( relays );
                 window.location.href = url;
             }
+            var genString = () => {
+                $( '.magic_string' ).innerText = ".";
+                $( '.magic_string' ).style.display = "block";
+                $( '.magic_string' ).style.fontSize = "500%";
+                setTimeout( function() {$( '.magic_string' ).innerText = "..";}, 200 );
+                setTimeout( function() {$( '.magic_string' ).innerText = "...";}, 400 );
+                $( '.magic_string' ).style.fontSize = "100%";
+                setTimeout( function() {$( '.magic_string' ).innerText = bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ) + textToHex( JSON.stringify( relays ) );}, 600 );
+            }
+            var backupString = () => {
+                var content = `<p>Did you back up your magic string? Save it somewhere safe where only you can access it. Your magic string is the only way to access your store. If you lose it, you will not only lose access to your store but also to any money you received since the last time you withdrew. Make sure you back this up before continuing:</p><p style="text-decoration: underline; font-weight: bold;">Your magic string</p><p>${$( '.magic_string' ).innerText}</p>`;
+                showModal( content );
+            }
         </script>
-        <h2>What is Magic Webstore?</h2>
-        <p>
-            Magic Webstore is a new kind of ecommerce experience, focused on reducing the headaches of creating and maintaining a webstore.
-        </p>
-        <h2>The Magic String</h2>
-        <p>
-            With Magic Webstore, your entire store is contained in your magic string, like a genie in a lamp. You just need to save that one string (back it up and store it safely) and you can do everything you need: add products to your store, manage your inventory, track your income, and keep you money safe.
-        </p>
-        <h2>The big difference</h2>
-        <p>
-            Unlike traditional webstores, Magic Webstore doesn't need your identity or bank account information, so the onboarding process is sleek and simple. Your Magic Webstore will automatically create a bitcoin wallet for you and even your private key is contained in your Magic String.
-        </p>
-        <p>
-            You just start adding products to your store and then share the link with people. They can view your products, buy items from you, and send you messages.
-        </p>
-        <h2>How can I use Magic Webstore?</h2>
-        <p>
-            Magic Webstore lets you monetize your life. Have a youtube channel? Start selling merchandise through Magic Webstore. Have a blog? Let people support you through sales and branding. Want to sell items at a farmer's market? Treat Magic Webstore as your point of sale system and let people check out with ease.
-        </p>
-        <p>
-            Try it out today! Magic Webstore is proudly built on bitcoin, the money of the internet, and nostr, a distributed data caching protocol. Magic Webstore is completely free and open source and you can dive into its source code <a href="https://github.com/supertestnet/superstore" target="_blank">by clicking here</a>.
-        </p>
+        <div class="explain">
+            <h2>What is Magic Webstore?</h2>
+            <p>
+                Magic Webstore is a new kind of ecommerce site focused on reducing the headaches of creating and maintaining a webstore.
+            </p>
+            <h2>Video</h2>
+            <p>
+                <a href="https://www.youtube.com/watch?v=cAH0384V1Bo" target="_blank">
+                    <img src="https://camo.githubusercontent.com/2224bee86d24077884a26c7aa6e72596ca60ec004a9ac4f8f2b73d78dc291c1a/68747470733a2f2f7375706572746573746e65742e6769746875622e696f2f737570657273746f72652f737570657273746f72652d7468756d626e61696c2e706e67" style="width: 100%">
+                </a>
+            </p>
+            <h2>The Magic String</h2>
+            <p>
+                With Magic Webstore, your entire store is contained in your magic string, like a genie in a lamp. You just need to save that one string (back it up and store it safely) and you can do everything you need: add products to your store, manage your inventory, track your income, and keep you money safe.
+            </p>
+            <h2>The big difference</h2>
+            <p>
+                Unlike traditional webstores, Magic Webstore doesn't need your identity or bank account information, so the onboarding process is sleek and simple. Your Magic Webstore will automatically create a bitcoin wallet for you and even your private key is contained in your Magic String.
+            </p>
+            <p>
+                You just start adding products to your store and then share the link with people. They can view your products, buy items from you, and send you messages.
+            </p>
+            <h2>How can I use Magic Webstore?</h2>
+            <p>
+                Magic Webstore lets you monetize your life. Have a youtube channel? Start selling merchandise through Magic Webstore. Have a blog? Let people support you through sales and branding. Want to sell items at a farmer's market? Treat Magic Webstore as your point of sale system and let people check out with ease.
+            </p>
+            <p>
+                Try it out today! Magic Webstore is proudly built on bitcoin, the money of the internet, and nostr, a distributed data caching protocol. Magic Webstore is completely free and open source and you can dive into its source code <a href="https://github.com/supertestnet/superstore" target="_blank">by clicking here</a>.
+            </p>
+        </div>
+        <script>
+            $( '.signup_btn' ).onclick = () => {
+                $( '.explain' ).style.display = "none";
+                $( '.signup' ).style.display = "block";
+            }
+            $( '.login_btn' ).onclick = () => {
+                useString();
+            }
+        </script>
+        <div class="black-bg"></div>
+        <div class="modal"></div>
     </body>
 </html>
