@@ -1594,9 +1594,9 @@
             }, 10000 );
         }
         async function init() {
-            sessionStorage[ "btc_price" ] = await getBitcoinPrice();
             $( '.splash_screen' ).style.display = "none";
             $( '.make_store' ).style.display = "block";
+            sessionStorage[ "btc_price" ] = await getBitcoinPrice();
             checkHeartbeat();
         }
         init();
