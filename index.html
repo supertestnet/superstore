@@ -695,6 +695,13 @@
                     if ( !$_GET[ "privkey" ] ) return;
                     sessionStorage[ "wallet_found_if_any" ] = true;
                 }
+                if ( kind === 42197 ) {
+                    if ( !shipped_orders.includes( event.tags[ 0 ][ 1 ] ) ) {
+                        $( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;
+                        shipped_orders.push( event.tags[ 0 ][ 1 ] );
+                        localStorage.shipped_orders = JSON.stringify( shipped_orders );
+                    }
+                }
             }
             if ( subId.startsWith( "01" ) ) {
                 if ( kind === 42196 ) {
@@ -1316,18 +1323,31 @@
                 return true;
             }
         }
+        var labelAsShipped = async ( order_id ) => {
+            var event = {
+                "content"    : "shipped",
+                "created_at" : Math.floor( Date.now() / 1000 ),
+                "kind"       : 42197,
+                "tags"       : [ [ "e", order_id ] ],
+                "pubkey"     : pubKey,
+            }
+            var signedEvent = await getSignedEvent(event, privKey);
+            Object.keys( relays_obj ).forEach( function( relay ) {
+                relays_obj[ relay ].send(JSON.stringify([ "EVENT", signedEvent ]));
+            });
+        }
     </script>
     <script>
         async function openConnection() {
             console.log( "connected to " + this.url );
             var subId   = ( "00" + bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ) ).substring( 0, 16 );
             if ( $_GET[ "pubkey"] ) {
-                var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196 ] }
+                var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196, 42197 ] }
                 var subscription = [ "REQ", subId, filter ];
             }
             if ( $_GET[ "privkey"] ) {
                 var filter  = { "#p": [ pubKey ], kinds: [ 4 ] }
-                var filter2  = { authors: [ pubKey ], kinds: [ 12196 ] }
+                var filter2  = { authors: [ pubKey ], kinds: [ 12196, 42197 ] }
                 var subscription = [ "REQ", subId, filter, filter2 ];
             }
             this.send(JSON.stringify( subscription ));
@@ -1545,7 +1565,7 @@
                     if ( sale[ 3 ] ) paid_amount = ( total / 100 ).toFixed( 2 );
                     var delivery_info = (sale[ 0 ][ "shipping_info" ]) ? sale[ 0 ][ "shipping_info" ]:sale[ 0 ][ "edelivery_info" ];
                     var order = `
-                        <div class="minicart order" style="background-color: ${bgcolor};"><div>Delivery info:<br><div class="delivery_info"></div></div><div class="payment_info" style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );">${shipped_instructions}</button></div></div>
+                        <div class="minicart order" style="background-color: ${bgcolor};" data-order_id="${sale[ 2 ]}"><div>Delivery info:<br><div class="delivery_info"></div></div><div class="payment_info" style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );var order_id = this.parentElement.parentElement.getAttribute( 'data-order_id' );labelAsShipped( order_id );">${shipped_instructions}</button></div></div>
                     `;
                     if ( !txinfo[ 3 ] ) {
                         order += `
