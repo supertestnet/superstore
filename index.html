@@ -610,7 +610,7 @@
                     if ( !content[ 1 ][ 0 ][ "price" ] ) return;
                     if ( !content[ 1 ][ 0 ][ "shipping_zone" ] ) return;
                     sales.push( [ ...content, event.id, 0 ] );
-                    if ( content[ 0 ][ "whisper_key" ] ) {
+                    if ( "whisper_key" in content[ 0 ] ) {
                         var whisper_key = content[ 0 ][ "whisper_key" ];
                         var privkey = addKeys( privKey, whisper_key );
                         var combokey = getCompressedPubkeyHexFromPrivkeyHex( privkey );
