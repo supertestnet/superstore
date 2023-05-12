@@ -1421,16 +1421,19 @@
                         </p>
                         <ul style="text-align: left;">
                             <li>
-                                enter this into your browser console: console.log( localStorage[ "wallet_info" ] )
+                                enter this into your browser console: console.log(&nbsp;localStorage[&nbsp;"wallet_info"&nbsp;]&nbsp;)
                             </li>
                             <li>
-                                it will show you your lnbits info
+                                it will show you your lnbits info in json format
                             </li>
                             <li>
-                                change that info so that it shows info hosted on your own node (or e.g. a voltage node)
+                                use a text editor to change the info in the json so that it shows info from your own node (or e.g. a voltage node)
                             </li>
                             <li>
-                                then enter this into your browser console: localStorage[ "wallet_info" ] = your_modified_lnbits_info
+                                then enter this into your browser console: var&nbsp;json&nbsp;=&nbsp;your_modified_json (but replace your_modified_json with the text you modified using your text editor)
+                            </li>
+                            <li>
+                                then enter this into your browser console: localStorage[&nbsp;"wallet_info"&nbsp;]&nbsp;=&nbsp;JSON.stringify(json)
                             </li>
                             <li>
                                 then resubmit your store
