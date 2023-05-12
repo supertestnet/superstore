@@ -575,6 +575,10 @@
         pubKey      = pubKey.substring( 2 );
         // console.log( pubKey );
         if ( $_GET[ "relay" ] ) var relay = $_GET[ "relay" ]; else var relay = "wss://nostrue.com";
+        if ( $_GET[ "relays" ] ) {
+            var relays = JSON.parse( decodeURI( $_GET[ "relays" ] ) );
+            relay = relays[ 0 ];
+        }
         var socket = new WebSocket( relay );
         async function handleMessage( message ) {
             var [ type, subId, event ] = JSON.parse( message.data );
