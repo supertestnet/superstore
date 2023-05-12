@@ -1385,11 +1385,6 @@
                 if ( ln_domain && ln_readkey ) $( '.blank_view' ).innerHTML += `                
                         <div class="ln_wallet" style="display: flex;justify-content: space-between;background-color: lightblue;padding: 0.5rem;align-items: center;"><div>Lightning balance: $<span class="usd_balance">0.00</span> (<span class="btc_balance">0</span>&nbsp;sats)</div><div><button class="withdraw">Manage</button></div></div><br>
                 `;
-                if ( ln_domain && ln_readkey ) {
-                    var ln_balance = await getLNBalance();
-                    $$( '.btc_balance' )[ 1 ].innerText = ln_balance;
-                    $$( '.usd_balance' )[ 1 ].innerText = satsToDollars( ln_balance ).toFixed( 2 );
-                }
                 $( '.blank_view' ).innerHTML += `
                         <div style="font-weight: bold;">Sales</div><br>
                         <div class="orders"></div>
@@ -1397,6 +1392,11 @@
                 `;
                 $( '.connect_node' ).onclick = async () => {
                     alert( "This button doesn't do anything yet -- coming soon!" );
+                }
+                if ( ln_domain && ln_readkey ) {
+                    var ln_balance = await getLNBalance();
+                    $$( '.btc_balance' )[ 1 ].innerText = ln_balance;
+                    $$( '.usd_balance' )[ 1 ].innerText = satsToDollars( ln_balance ).toFixed( 2 );
                 }
                 sales.forEach( async function( sale, index ) {
                     if ( "whisper_key" in sale[ 0 ] ) {
