@@ -101,7 +101,7 @@
         var useString = () => {
             var ms = prompt( "Please enter your magic string" );
             if ( !ms ) return;
-            window.location.href = window.location.protocol + "//" + window.location.hostname + window.location.pathname.substring( 0, window.location.pathname.indexOf( "onboard.htm" ) ) + "index.html?privkey=" + ms;
+            window.location.href = window.location.protocol + "//" + window.location.hostname + window.location.pathname.substring( 0, window.location.pathname.indexOf( "onboard.htm" ) ) + "/index.html?privkey=" + ms;
         }
     </script>
 </html>
