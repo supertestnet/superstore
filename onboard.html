@@ -141,7 +141,7 @@
             <div style="text-align: center;">
                 Magic Webstore does not use traditional usernames and passwords, instead it uses magic strings. Make sure to back yours up! Your magic string is the only way to access your store.<br>
             </div>
-            <div style="text-align: center; word-wrap: break-word; padding: 1rem; border: 1px solid black; margin-top: 1rem; display: none;" class="magic_string"></div>
+            <div style="flex-direction: column; justify-content: center; align-items: center; word-wrap: break-word; overflow-wrap: anywhere; padding: 1rem; border: 1px solid black; margin-top: 1rem; display: none;" class="magic_string_box"><span class="magic_string"></span></div>
             <div class="row">
                 <div class="circle"><div>1</div></div>
                 <div class="instruction"><span class="blue" onclick="genString()">Generate</span> your magic string</div>
@@ -167,13 +167,16 @@
                 window.location.href = url;
             }
             var genString = () => {
-                $( '.magic_string' ).innerText = ".";
-                $( '.magic_string' ).style.display = "block";
-                $( '.magic_string' ).style.fontSize = "500%";
-                setTimeout( function() {$( '.magic_string' ).innerText = "..";}, 200 );
-                setTimeout( function() {$( '.magic_string' ).innerText = "...";}, 400 );
-                $( '.magic_string' ).style.fontSize = "100%";
-                setTimeout( function() {$( '.magic_string' ).innerText = bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ) + textToHex( JSON.stringify( relays ) );}, 600 );
+                $( '.magic_string_box' ).style.display = "flex";
+                $( '.magic_string' ).innerText = "•";
+                $( '.magic_string' ).style.fontSize = "250%";
+                setTimeout( function() {$( '.magic_string' ).innerText = "••";}, 200 );
+                setTimeout( function() {$( '.magic_string' ).innerText = "•••";}, 400 );
+                setTimeout( function() {
+                    $( '.magic_string_box' ).innerHTML = `<p style="font-weight: bold; text-decoration: underline;">Your magic string</p><div class="magic_string" style="text-align: center;"></div>`;
+                    $( '.magic_string' ).style.fontSize = "100%";
+                    $( '.magic_string' ).innerText = bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ) + textToHex( JSON.stringify( relays ) );
+                }, 600 );
             }
             var backupString = () => {
                 var content = `<p>Did you back up your magic string? Save it somewhere safe where only you can access it. Your magic string is the only way to access your store. If you lose it, you will not only lose access to your store but also to any money you received since the last time you withdrew. Make sure you back this up before continuing:</p><p style="text-decoration: underline; font-weight: bold;">Your magic string</p><p>${$( '.magic_string' ).innerText}</p>`;
