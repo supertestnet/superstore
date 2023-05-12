@@ -1092,9 +1092,10 @@
                 });
                 // socket.send(JSON.stringify([ "EVENT", signedEvent ]));
                 await waitSomeSeconds( 1 );
-                var percent = String( Math.floor( ( i + 1 / $$( '.product' ).length ) * 100 ) ) + "%";
+                console.log( i + 1, $$( '.product' ).length, Math.floor( ( ( Number( i ) + Number( 1 ) ) / $$( '.product' ).length ) * 100 ) );
+                var percent = String( Math.floor( ( ( Number( i ) + Number( 1 ) ) / $$( '.product' ).length ) * 100 ) ) + "%";
                 $( '.progressBar' ).style.width = percent;
-                $( '.status' ).innerText = String( ( i + 1 ) ) + " out of " + String( $$( '.product' ).length ) + " products created";
+                $( '.status' ).innerText = String( ( Number( i ) + Number( 1 ) ) ) + " out of " + String( $$( '.product' ).length ) + " products created";
             }
             console.log( "product ids:", product_ids );
             var store_info = {}
