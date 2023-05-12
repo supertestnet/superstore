@@ -910,14 +910,23 @@
     <script>
         async function ensureWalletIsAvailable() {
             //check if user has a wallet stored in local storage
-            var userHasLocalWallet;
-            if ( localStorage[ "wallet_info" ] ) userHasLocalWallet = true;
-            if ( userHasLocalWallet ) return;
+            if ( localStorage[ "wallet_info" ] ) {
+                userHasLocalWallet = true;
+                var wallet_info = JSON.parse( localStorage[ "wallet_info" ] );
+                var wallet_url = wallet_info[ "wallet_url" ];
+                ln_domain = wallet_url.substring( 0, wallet_url.indexOf( "/wallet" ) );
+                ln_readkey = wallet_info[ "readkey" ];
+                return;
+            }
             // if they do not, make a lightning wallet for them
             var wallet_info = await makeLNWallet( pubKey.substring( 0, 15 ) );
             // I used to store it on nostr here but now I wait til
             // they create a store and then store it in the store info
             localStorage[ "wallet_info" ] = JSON.stringify( wallet_info );
+            var wallet_info = JSON.parse( localStorage[ "wallet_info" ] );
+            var wallet_url = wallet_info[ "wallet_url" ];
+            ln_domain = wallet_url.substring( 0, wallet_url.indexOf( "/wallet" ) );
+            ln_readkey = wallet_info[ "readkey" ];
             // get invoice: postData( "https://legend.lnbits.com/api/v1/payments", '{"out": false, "amount": 1000}', content_type = "application/json", apikey = "6eafd20149f6491baa61166faba0d9dc" );
             //check invoice: getData( "https://legend.lnbits.com/api/v1/payments/a89f4279b098fa4e6254798619902f3a1bfb3adeabe4006284d842075442d1bf", "application/json", "6eafd20149f6491baa61166faba0d9dc" );
         }
