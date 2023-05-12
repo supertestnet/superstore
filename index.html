@@ -140,6 +140,9 @@
                 padding-top: 1rem;
                 margin-top: 1rem;
             }
+            .plus_and_minus {
+                margin-left: 0;
+            }
         }
     </style>
     <script>
@@ -1385,9 +1388,11 @@
             var manageSales = async () => {
                 $( '.splash_screen' ).style.display = "block";
                 $( '.products' ).style.display = "none";
+                $( '.store_maker' ).style.display = "none";
                 await getNote( "btc_price" );
                 await getNote( "wallet_found_if_any" );
                 $( '.splash_screen' ).style.display = "none";
+                $( '.store_maker' ).style.display = "inline";
                 $( '.products' ).style.display = "none";
                 $( '.preview_pane' ).style.display = "none"
                 $( '.store_maker' ).parentElement.style.display = "none";
@@ -1407,7 +1412,41 @@
                     </div>
                 `;
                 $( '.connect_node' ).onclick = async () => {
-                    alert( "This button doesn't do anything yet -- coming soon!" );
+                    var content = `
+                        <p>
+                            Base-layer bitcoin payments on Magic Webstore are fully self-custodied by you. You alone have the private key to that money. However, for the lightning network, Magic Webstore automatically sets you up with a custodial lightning wallet from lnbits.com. Custodial solutions are typically easy to get started, but they usually stop operating at some point, so it's good to prepare for that.
+                        </p>
+                        <p>
+                            A really good way to ensure you don't lose your funds on lightning when lnbits eventually ceases operations is to run your own lightning node. If you don't know what that is, <a href="https://thebitcoinmanual.com/behind-btc/nodes/lightning-node/" target="_blank">click here</a>. I'm not finished making it easy to connect your store to your own lightning node, but in the meantime, if you're brave and you already have a lightning node running with your own lnbits instance, you can hook Magic Webstore up to your node with a little in-browser coding. Here are instructions:
+                        </p>
+                        <ul style="text-align: left;">
+                            <li>
+                                enter this into your browser console: console.log( localStorage[ "wallet_info" ] )
+                            </li>
+                            <li>
+                                it will show you your lnbits info
+                            </li>
+                            <li>
+                                change that info so that it shows info hosted on your own node (or e.g. a voltage node)
+                            </li>
+                            <li>
+                                then enter this into your browser console: localStorage[ "wallet_info" ] = your_modified_lnbits_info
+                            </li>
+                            <li>
+                                then resubmit your store
+                            </li>
+                        </ul>
+                        <p>
+                            If you do all that, all the sats you earn on lightning will flow to your own node. But beware! If your lnbits instance is a hidden service on tor, as most of them are, people won't be able to send you funds on lightning unless they happen to be using a tor compatible web browser. So test it first to make sure it works how you want it to.
+                        </p>
+                        <p>
+                            If all of that stuff sounds confusing or daunting, you have a few options: first, you can learn. Don't be afraid to learn how bitcoin works so you can take full advantage of its awesome features. Second, you can freely ignore this message because the site works fine without running your own node. Just know that if you don't run your own node you can easily and quickly lose any money you have on the lightning network.
+                        </p>
+                        <p>
+                            A decent compromise is to daily withdraw any money you earn on lightning to a lightning wallet like breez or phoenix. Those phone wallets are easy to set up on your phone so give them a try! And let me know if you have any issues. On twitter I am @super_testnet.
+                        </p>
+                    `;
+                    showModal( content );
                 }
                 if ( ln_domain && ln_readkey ) {
                     var ln_balance = await getLNBalance();
