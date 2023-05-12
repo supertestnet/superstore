@@ -149,6 +149,7 @@
         for ( var key of url_keys ) $_GET[ key ] = url_params.get( key );
         var mempoolNetwork = "";
         if ( $_GET[ "network" ] == "testnet" ) mempoolNetwork = $_GET[ "network" ] + "/";
+        if ( !$_GET[ "privkey" ] && !$_GET[ "pubkey" ] ) window.location.href = window.location.href = window.location.protocol + "//" + window.location.hostname + window.location.pathname.substring( 0, window.location.pathname.indexOf( "index.htm" ) ) + "onboard.html";
     </script>
     <script>
         sessionStorage.removeItem( "wallet_found_if_any" );
