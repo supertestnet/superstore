@@ -609,7 +609,9 @@
                     if ( !content[ 1 ][ 0 ] ) return;
                     if ( typeof content[ 1 ][ 0 ] != "object" ) return;
                     if ( !content[ 1 ][ 0 ][ "item" ] ) return;
-                    if ( !content[ 1 ][ 0 ][ "price" ] ) return;
+                    if ( !( "price" in content[ 1 ][ 0 ] ) ) return;
+                    if ( typeof content[ 1 ][ 0 ][ "price" ] != "number" ) return;
+                    if ( content[ 1 ][ 0 ][ "price" ] < 0 ) return;
                     if ( !content[ 1 ][ 0 ][ "shipping_zone" ] ) return;
                     sales.push( [ ...content, event.id, 0 ] );
                     if ( "whisper_key" in content[ 0 ] ) {
@@ -1372,6 +1374,11 @@
             var html = `<div class="minicart"><span class="sales_count">0</span> new sales <button class="manage_sales_btn">Manage sales</button></div>`;
             $( '.manage_sales_toolbar' ).innerHTML = html;
             var manageSales = async () => {
+                $( '.splash_screen' ).style.display = "block";
+                $( '.products' ).style.display = "none";
+                await getNote( "btc_price" );
+                await getNote( "wallet_found_if_any" );
+                $( '.splash_screen' ).style.display = "none";
                 $( '.products' ).style.display = "none";
                 $( '.preview_pane' ).style.display = "none"
                 $( '.store_maker' ).parentElement.style.display = "none";
