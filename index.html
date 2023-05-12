@@ -578,6 +578,8 @@
         if ( $_GET[ "relays" ] ) {
             var relays = JSON.parse( decodeURI( $_GET[ "relays" ] ) );
             relay = relays[ 0 ];
+        } else {
+            var relays = [relay];
         }
         var socket = new WebSocket( relay );
         async function handleMessage( message ) {
