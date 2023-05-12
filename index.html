@@ -1304,9 +1304,7 @@
                 var filter2  = { authors: [ pubKey ], kinds: [ 12196 ] }
                 var subscription = [ "REQ", subId, filter, filter2 ];
             }
-            Object.keys( relays_obj ).forEach( function( relay ) {
-                relays_obj[ relay ].send(JSON.stringify( subscription ));
-            });
+            this.send(JSON.stringify( subscription ));
             // socket.send(JSON.stringify( subscription ));
             //I decided to pull in my wallet when I get my 12196 event, only
             //there are two problems with that: first, in its current position,
