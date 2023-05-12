@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no">
+        <!-- the line above, if uncommented, mostly makes a page mobile friendly without any further work needed, except it disables zoom on mobile -->
+        <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
+        <style>
+            * {
+                box-sizing: border-box;
+                font-size: 1.15rem;
+                font-family: Arial, sans-serif;
+            }
+            html {
+                max-width: 70ch;
+                padding: 3rem 1rem;
+                margin: auto;
+                line-height: 1.25;
+            }
+            h1 {
+                text-align: center;
+                font-size: 2rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+            input {
+                line-height: 1.25;
+                width: 100%;
+                height: 1.8rem;
+                font-size: 1.15rem;
+                border: 1px solid grey;
+            }
+            .onboard {
+                border: 1px solid black;
+                border-radius: 1rem;
+                padding: 1rem;
+                max-width: 25rem;
+                margin: auto;
+            }
+            .row {
+                display: flex;
+                align-items: center;
+            }
+            .circle {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 4rem;
+                height: 4rem;
+                border: 1px solid black;
+                border-radius: 2rem;
+                margin: 1rem;
+            }
+            .blue {
+                color: blue;
+                text-decoration: underline;
+                cursor: pointer;
+            }
+            @media screen and (max-width: 600px) {
+            }
+        </style>
+        <script>
+            var $ = document.querySelector.bind( document );
+            var $$ = document.querySelectorAll.bind( document );
+            var url_params = new URLSearchParams( window.location.search );
+            var url_keys = url_params.keys();
+            var $_GET = {}
+            for ( var key of url_keys ) $_GET[ key ] = url_params.get( key );
+        </script>
+        <script>
+            function bytesToHex( bytes ) {
+                return bytes.reduce( ( str, byte ) => str + byte.toString( 16 ).padStart( 2, "0" ), "" );
+            }
+        </script>
+    </head>
+    <body>
+        <h1>Welcome to Magic Webstore</h1>
+        <div class="onboard">
+            <div style="text-align: center;">
+                Here is a fresh, new magic string<br>
+                (or you can <span class="blue" onclick="useString()">use an existing one</span>)
+            </div>
+            <div style="text-align: center; word-wrap: break-word; padding: 1rem; border: 1px solid black; margin-top: 1rem;" class="magic_string"></div>
+            <div class="row">
+                <div class="circle"><div>1</div></div>
+                <div class="instruction">Back up your magic string</div>
+            </div>
+            <div class="row">
+                <div class="circle"><div>2</div></div>
+                <div class="instruction"><span class="blue" onclick="useString()">Log in</span> with your magic string</div>
+            </div>
+            <div class="row">
+                <div class="circle"><div>3</div></div>
+                <div class="instruction">Create and share your store</div>
+            </div>
+        </div>
+    </body>
+    <script>
+        $( '.magic_string' ).innerText = bytesToHex( nobleSecp256k1.utils.randomPrivateKey() );
+        var useString = () => {
+            var ms = prompt( "Please enter your magic string" );
+            if ( !ms ) return;
+            window.location.href = window.location.protocol + "//" + window.location.hostname + window.location.pathname.substring( 0, window.location.pathname.indexOf( "onboard.htm" ) ) + "index.html?privkey=" + ms;
+        }
+    </script>
+</html>
