@@ -86,6 +86,9 @@
                 text-align: center;
                 word-wrap: break-word;
             }
+            .back_btn {
+                display: none;
+            }
             @media screen and (max-width: 600px) {
             }
         </style>
@@ -133,7 +136,7 @@
     </head>
     <body>
         <h1>Welcome to Magic Webstore 🪄</h1>
-        <div style="text-align: right; margin-bottom: 1rem;"><button class="signup_btn">Sign&nbsp;up</button>&nbsp;<button class="login_btn">Log&nbsp;in</button></div>
+        <div style="text-align: right; margin-bottom: 1rem;"><button class="back_btn">Back</button><button class="signup_btn">Sign&nbsp;up</button>&nbsp;<button class="login_btn">Log&nbsp;in</button></div>
         <div class="signup">
             <div style="text-align: center;">
                 Magic Webstore does not use traditional usernames and passwords, instead it uses magic strings. Make sure to back yours up! Your magic string is the only way to access your store.<br>
@@ -210,10 +213,18 @@
         <script>
             $( '.signup_btn' ).onclick = () => {
                 $( '.explain' ).style.display = "none";
+                $( '.signup_btn' ).style.display = "none";
+                $( '.back_btn' ).style.display = "inline";
                 $( '.signup' ).style.display = "block";
             }
             $( '.login_btn' ).onclick = () => {
                 useString();
+            }
+            $( '.back_btn' ).onclick = () => {
+                $( '.explain' ).style.display = "block";
+                $( '.signup_btn' ).style.display = "inline";
+                $( '.back_btn' ).style.display = "none";
+                $( '.signup' ).style.display = "none";
             }
         </script>
         <div class="black-bg"></div>
