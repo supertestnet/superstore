@@ -175,7 +175,7 @@
                 setTimeout( function() {
                     $( '.magic_string_box' ).innerHTML = `<p style="font-weight: bold; text-decoration: underline;">Your magic string</p><div class="magic_string" style="text-align: center;"></div>`;
                     $( '.magic_string' ).style.fontSize = "100%";
-                    $( '.magic_string' ).innerText = bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ) + textToHex( JSON.stringify( relays ) );
+                    $( '.magic_string' ).innerText = "00" + bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 2, 64 ) + textToHex( JSON.stringify( relays ) );
                 }, 600 );
             }
             var backupString = () => {
