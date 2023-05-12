@@ -102,7 +102,8 @@
             var ms = prompt( "Please enter your magic string" );
             if ( !ms ) return;
             var index = window.location.pathname.indexOf( "onboard.htm" ) > -1 ? window.location.pathname.indexOf( "onboard.htm" ):100000;
-            window.location.href = window.location.protocol + "//" + window.location.hostname + window.location.pathname.substring( 0, index ) + "/index.html?privkey=" + ms;
+            var extra_slash = window.location.pathname.substring( 0, index ).endsWith( "/" ) ? "":"/";
+            window.location.href = window.location.protocol + "//" + window.location.hostname + window.location.pathname.substring( 0, index ) + extra_slash + "index.html?privkey=" + ms;
         }
     </script>
 </html>
