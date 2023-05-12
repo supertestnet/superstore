@@ -7,7 +7,7 @@ A simple bitcoin webstore with whisper addresses for enhanced privacy
 
 # What is this?
 
-Magic Webstore is a solution to the following problem: I often wish I had a store where I could sell stuff, but then I remember how hard it is to set up a store. First you need a server -- which probably costs money, unless you self host one, which is hard -- then you need to set up the store, which means naming it, styling it, adding payment methods, connecting a bank account or paypal or stripe or similar (and dealing with their fees), then add shipping options, then add your products, then -- assuming you want to accept bitcoin too -- you've probably got to install some special software or a special plugin or give custody to some third party. And you also lose your privacy because you're probably giving your xpubs to those folks too.
+Magic Webstore is a solution to the following problem: I often wish I had a store where I could sell stuff, but then I remember how hard it is to set up a store. First you need a server -- which probably costs money, unless you self host one, which is hard -- then you need to set up the store, which means styling it, adding payment methods, connecting a bank account or paypal or stripe or similar (and dealing with their fees), then add shipping options, then add your products, then -- assuming you want to accept bitcoin too -- you've probably got to install some special software or a special plugin or give custody to some third party. And you also lose your privacy because you're probably giving your xpubs to those folks too.
 
 # What if there was a simpler way?
 
@@ -15,7 +15,6 @@ Nostr makes a lot of stuff that used to need a server not need one anymore. Or a
 
 - [x] It's hosted on github pages, which is free and easy
 - [x] Or you can download the index.html file and run it locally, also free and easy
-- [x] You don't need to name your store (you'll probably link to it on your blog or similar, so it will be associated with you that way)
 - [x] You don't need to style it because it already looks great
 - [ ] Ok that's a total lie, it looks like trash. Maybe I will add custom styling as a feature someday
 - [x] You don't need to add a payment method -- we'll use bitcoin, which is free and easy
