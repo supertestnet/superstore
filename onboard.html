@@ -95,15 +95,37 @@
                 <div class="instruction">Create and share your store</div>
             </div>
         </div>
+        <script>
+            $( '.magic_string' ).innerText = bytesToHex( nobleSecp256k1.utils.randomPrivateKey() );
+            var useString = () => {
+                var ms = prompt( "Please enter your magic string" );
+                if ( !ms ) return;
+                var index = window.location.pathname.indexOf( "onboard.htm" ) > -1 ? window.location.pathname.indexOf( "onboard.htm" ):100000;
+                var extra_slash = window.location.pathname.substring( 0, index ).endsWith( "/" ) ? "":"/";
+                window.location.href = window.location.protocol + "//" + window.location.hostname + window.location.pathname.substring( 0, index ) + extra_slash + "index.html?privkey=" + ms;
+            }
+        </script>
+        <h2>What is Magic Webstore?</h2>
+        <p>
+            Magic Webstore is a new kind of ecommerce experience, focused on reducing the headaches of creating and maintaining a webstore.
+        </p>
+        <h2>The Magic String</h2>
+        <p>
+            With Magic Webstore, your entire store is contained in your magic string, like a genie in a lamp. You just need to save that one string (back it up and store it safely) and you can do everything you need: add products to your store, manage your inventory, track your income, and keep you money safe.
+        </p>
+        <h2>The big difference</h2>
+        <p>
+            Unlike traditional webstores, Magic Webstore doesn't need your identity or bank account information, so the onboarding process is sleek and simple. Your Magic Webstore will automatically create a bitcoin wallet for you and even your private key is contained in your Magic String.
+        </p>
+        <p>
+            You just start adding products to your store and then share the link with people. They can view your products, buy items from you, and send you messages.
+        </p>
+        <h2>How can I use Magic Webstore?</h2>
+        <p>
+            Magic Webstore lets you monetize your life. Have a youtube channel? Start selling merchandise through Magic Webstore. Have a blog? Let people support you through sales and branding. Want to sell items at a farmer's market? Treat Magic Webstore as your point of sale system and let people check out with ease.
+        </p>
+        <p>
+            Try it out today! Magic Webstore is proudly built on bitcoin, the money of the internet, and nostr, a distributed data caching protocol. Magic Webstore is completely free and open source and you can dive into its source code <a href="https://github.com/supertestnet/superstore" target="_blank">by clicking here</a>.
+        </p>
     </body>
-    <script>
-        $( '.magic_string' ).innerText = bytesToHex( nobleSecp256k1.utils.randomPrivateKey() );
-        var useString = () => {
-            var ms = prompt( "Please enter your magic string" );
-            if ( !ms ) return;
-            var index = window.location.pathname.indexOf( "onboard.htm" ) > -1 ? window.location.pathname.indexOf( "onboard.htm" ):100000;
-            var extra_slash = window.location.pathname.substring( 0, index ).endsWith( "/" ) ? "":"/";
-            window.location.href = window.location.protocol + "//" + window.location.hostname + window.location.pathname.substring( 0, index ) + extra_slash + "index.html?privkey=" + ms;
-        }
-    </script>
 </html>
