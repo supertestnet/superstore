@@ -592,7 +592,7 @@
                 if ( kind === 4 ) {
                     var is_seen = false;
                     sales.forEach( function( sale ) {
-                        if ( sale[ 1 ] == event.id ) is_seen = true;
+                        if ( sale[ 2 ] == event.id ) is_seen = true;
                     })
                     if ( is_seen ) return;
                     content = await decrypt(privKey, event.pubkey, content);
