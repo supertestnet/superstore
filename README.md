@@ -1,4 +1,4 @@
-# Superstore
+# Superstore is now called Magic Webstore
 A simple bitcoin webstore with whisper addresses for enhanced privacy
 
 # Video
