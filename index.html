@@ -341,7 +341,7 @@
         async function loopTilAddressReceivesMoney(address, network) {
             let itReceivedMoney = false;
             async function isDataSetYet(data_i_seek) {
-                return new Promise(function (resolve, reject) {
+                return new Promise(async function (resolve, reject) {
                     if (!data_i_seek) {
                         setTimeout(async function () {
                             if ( $( '.blank_view h2' ).innerText != "Checkout" || $( '.blank_view' ).style.display == "none" ) {
@@ -356,6 +356,7 @@
                             resolve(msg);
                         }, 2000);
                     } else {
+                        if ( data_i_seek == "error" ) {await waitSomeSeconds( 1 );data_i_seek = await loopTilAddressReceivesMoney(address, network);}
                         resolve(data_i_seek);
                     }
                 });
@@ -384,6 +385,11 @@
             let vout;
             let amt;
             let nonjson = await getData("https://mempool.space/" + network + "api/address/" + address + "/txs");
+            if ( nonjson == "error" ) {
+                await waitSomeSeconds( 1 );
+                var info = await addressReceivedMoneyInThisTx(address, network);
+                return info;
+            } 
             let json = JSON.parse(nonjson);
             json.forEach(function (tx) {
                 tx["vout"].forEach(function (output, index) {
