@@ -122,7 +122,6 @@
                 var index = window.location.pathname.indexOf( "onboard.htm" ) > -1 ? window.location.pathname.indexOf( "onboard.htm" ):100000;
                 var extra_slash = window.location.pathname.substring( 0, index ).endsWith( "/" ) ? "":"/";
                 var url = window.location.protocol + "//" + window.location.hostname + window.location.pathname.substring( 0, index ) + extra_slash + "index.html?privkey=" + privkey + "&relays=" + encodeURI( relays );
-                alert( url );
                 window.location.href = url;
             }
         </script>
