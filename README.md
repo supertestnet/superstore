@@ -41,7 +41,6 @@ Also make sure you withdraw your money from the store frequently. The site uses 
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
 
-- [ ] Change "sign up" to "get started"
 - [ ] Add a misc item where the customer sets the price
 - [ ] Include the product id with each product in a customer's order
 - [ ] Create a uuid for each order and put it in the invoice description
@@ -67,4 +66,4 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [x] Add custom relays -- users are no longer limited to just one hardcoded relay. There are now three hardcoded relays, but they appear as a query parameter in your store url so you can easily change them if you want to use different ones.
 - [x] Portable shipping status -- previously when you click Shipped on an order, Magic Webstore stored the fact that you shipped that product in your browser's local storage. If you did that on your computer and then went to manage your store on your phone, your phone wouldn't know you shipped the product, so it would still show it as needing to be shipped. (Unless the money went into a bitcoin address and then you withdrew it.) Now I made it so that when you click Shipped on an order, Magic Webstore sends a dm that references the shipped order in a tag, and then if you switch devices Magic Webstore can load those dms and thus know which orders you shipped.
 - [x] Better error handling -- sometimes mempool.space's api starts rate-limiting you, which causes errors, which can stop the page from running. Worst case scenario: you just paid for an order when the page crashes and you lose your money forever.
-
+- [x] Change "sign up" to "get started"
