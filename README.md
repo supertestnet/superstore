@@ -41,6 +41,12 @@ Also make sure you withdraw your money from the store frequently. The site uses 
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
 
+- [ ] change "sign up" to "get started"
+- [ ] add a misc item where the customer sets the price
+- [ ] include the product id with each product in a customer's order
+- [ ] create a uuid for each order and put it in the invoice description
+- [ ] on a lightning payment's "Inspect transaction" link, instead of opening to lnbits, show a modal with instructions: "open lnbits, go to the searchbar, type this in"
+- [ ] revise homepage to look more like an altcoin website
 - [ ] Custom styling -- people like to make things look nice and feel like it's themed after their regular blog or website or whatever. Ok cool but visual flare isn't very important to me so maybe someone else can add code for that. Do a pull request!
 - [ ] An aggregator -- what if the shop client aggregated all the products that ship to your region and displayed them all on one page regardless of who the actual merchant is? That could be super cool, like a craigslist but on bitcoin+nostr! Plus you could have categories and e.g. just browse all the offers by people who sell gift cards, or browse all the offers by people who want to trade fiat for bitcoin, etc.
 - [ ] Ratings -- these would become very important if there was an aggregator service but they are a frequent request anyway, even without that. I hesitate to add ratings because I don't know a good way to do them on nostr (they are easy to spoof and I don't currently know a decent way to filter out spoofs -- someone tell me how to do it!)
