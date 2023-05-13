@@ -45,6 +45,7 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [ ] Include the product id with each product in a customer's order
 - [ ] Create a uuid for each order and put it in the invoice description
 - [ ] On a lightning payment's "Inspect transaction" link, instead of opening to lnbits, show a modal with instructions: "open lnbits, go to the searchbar, type this in"
+- [ ] Educate merchants about resources like thebitcoincompany.com where they can use their earnings to buy visa gift cards -- e.g. merchants with a fiat webshop can load a visa card via bitcoin and unload it as usd in their regular shop, thus putting their bitcoin earnings into their regular workflow
 - [ ] Make a downloadable version with a rest api
 - [ ] Custom ordering -- people have complained that the order in which products appear on their frontend does not match the order they appear on the backend, and they'd also like to be able to set them in a particular order without needing to copy/paste stuff between different boxes
 - [ ] Custom styling -- people like to make things look nice and feel like it's themed after their regular blog or website or whatever. Ok cool but visual flare isn't very important to me so maybe someone else can add code for that. Do a pull request!
