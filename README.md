@@ -45,7 +45,6 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [ ] Include the product id with each product in a customer's order
 - [ ] Create a uuid for each order and put it in the invoice description
 - [ ] On a lightning payment's "Inspect transaction" link, instead of opening to lnbits, show a modal with instructions: "open lnbits, go to the searchbar, type this in"
-- [ ] Revise homepage to look more like an altcoin website such as https://www.getmonero.org/ -- they really no how to make a site look nice
 - [ ] Make a downloadable version with a rest api
 - [ ] Custom ordering -- people have complained that the order in which products appear on their frontend does not match the order they appear on the backend, and they'd also like to be able to set them in a particular order without needing to copy/paste stuff between different boxes
 - [ ] Custom styling -- people like to make things look nice and feel like it's themed after their regular blog or website or whatever. Ok cool but visual flare isn't very important to me so maybe someone else can add code for that. Do a pull request!
@@ -67,3 +66,4 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [x] Portable shipping status -- previously when you click Shipped on an order, Magic Webstore stored the fact that you shipped that product in your browser's local storage. If you did that on your computer and then went to manage your store on your phone, your phone wouldn't know you shipped the product, so it would still show it as needing to be shipped. (Unless the money went into a bitcoin address and then you withdrew it.) Now I made it so that when you click Shipped on an order, Magic Webstore sends a dm that references the shipped order in a tag, and then if you switch devices Magic Webstore can load those dms and thus know which orders you shipped.
 - [x] Better error handling -- sometimes mempool.space's api starts rate-limiting you, which causes errors, which can stop the page from running. Worst case scenario: you just paid for an order when the page crashes and you lose your money forever.
 - [x] Change "sign up" to "get started"
+- [x] Revise homepage to look more like an altcoin website such as https://www.getmonero.org/ -- they really no how to make a site look nice
