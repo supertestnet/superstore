@@ -43,7 +43,7 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 
 - [ ] Include the product id with each product in a customer's order
 - [ ] Create a uuid for each order and put it in the invoice description
-- [ ] On a lightning payment's "Inspect transaction" link, instead of opening to lnbits, show a modal with instructions: "open lnbits, go to the searchbar, type this in"
+- [ ] On a lightning payment's "Inspect transaction" link, instead of opening to lnbits, show a modal with instructions: "open lnbits, enter this in the searchbar"
 - [ ] Educate merchants about resources like thebitcoincompany.com where they can use their earnings to buy visa gift cards -- e.g. merchants with a fiat webshop can load a visa card via bitcoin and unload it as usd in their regular shop, thus putting their bitcoin earnings into their regular workflow
 - [ ] Show buyers a measurement of merchant activity -- e.g. did the merchant check their store this week? Did they fulfill any orders this week?
 - [ ] Make a downloadable version with a rest api
