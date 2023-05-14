@@ -703,7 +703,7 @@
                 }
                 if ( kind === 42197 ) {
                     if ( !shipped_orders.includes( event.tags[ 0 ][ 1 ] ) ) {
-                        $( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;
+                        if ( $( '.sales_count' ) ) $( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;
                         shipped_orders.push( event.tags[ 0 ][ 1 ] );
                         localStorage.shipped_orders = JSON.stringify( shipped_orders );
                     }
@@ -1122,6 +1122,7 @@
             });
         }
         $( '.preview' ).onclick = (e) => {
+            console.log( 0 );
             var checked = e.target.parentElement.children[ 5 ].children[ 0 ].checked;
             var price = !checked ? Number( e.target.parentElement.children[ 4 ].value ):`Set an amount<div>$<input style="width: 90%;"></div>`;
             if ( typeof price == "number" ) price = "$" + price.toFixed( 2 );
