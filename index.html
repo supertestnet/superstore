@@ -1166,7 +1166,7 @@
                 private += `&network=${$_GET[ "network" ]}`;
             }
             // var content = `<p><a href="${shareable}" target="_blank">Click here</a> to share your store</p><p><a href="${private}" target="_blank">Click here</a> to manage your store and withdraw your earnings</p>`;
-            var content = `Success, your store is now ready`;
+            var content = `Success, <a href="${shareable}" target="_blank">your store</a> is now ready. When you X out of this popup you will be redirected to its backend automatically.`;
             showModal( content, true );
             await getNote( "modal_cleared" );
             //alert( "Here is your sharable store url:\n\n" + url + "?pubkey=" + original_pubkey +
