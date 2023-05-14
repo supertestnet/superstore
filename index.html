@@ -767,7 +767,7 @@
                     $$( '.store_product .shipping_zone' )[ existing_num ].innerText = content.shipping_zone;
                     $$( '.add_to_cart' ).forEach( function( item ) {
                         item.onclick = (e) => {
-                            console.log( content.price, e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ), ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) )
+                            // console.log( content.price, e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ), ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) )
                             $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
                             cart.push({
                                 item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
