@@ -591,7 +591,7 @@
             var relays = JSON.parse( decodeURI( $_GET[ "relays" ] ) );
             relay = relays[ 0 ];
         } else {
-            var relays = [relay];
+            var relays = [relay, "wss://relay.wellorder.net", "wss://nostr.oxtr.dev"];
         }
         var relays_obj = {}
         // var socket = new WebSocket( relay );
