@@ -767,7 +767,6 @@
                     $$( '.store_product .shipping_zone' )[ existing_num ].innerText = content.shipping_zone;
                     $$( '.add_to_cart' ).forEach( function( item ) {
                         item.onclick = (e) => {
-                            console.log( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].getElementsByTagName( "input" )[ 0 ].value );
                             $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
                             cart.push({
                                 item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
