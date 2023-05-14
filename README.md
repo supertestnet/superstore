@@ -41,7 +41,6 @@ Also make sure you withdraw your money from the store frequently. The site uses 
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
 
-- [ ] Give merchants a button to let customers set the price on an item (e.g. for "donation" items or "pay what you want" items)
 - [ ] Include the product id with each product in a customer's order
 - [ ] Create a uuid for each order and put it in the invoice description
 - [ ] On a lightning payment's "Inspect transaction" link, instead of opening to lnbits, show a modal with instructions: "open lnbits, go to the searchbar, type this in"
@@ -69,3 +68,4 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [x] Better error handling -- sometimes mempool.space's api starts rate-limiting you, which causes errors, which can stop the page from running. Worst case scenario: you just paid for an order when the page crashes and you lose your money forever.
 - [x] Change "sign up" to "get started"
 - [x] Revise homepage to look more like an altcoin website such as getmonero.org -- they really know how to make a site look nice
+- [x] Give merchants a button to let customers set the price on an item (e.g. for "donation" items or "pay what you want" items)
