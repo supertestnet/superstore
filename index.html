@@ -701,9 +701,9 @@
                     if ( !$_GET[ "privkey" ] ) return;
                     sessionStorage[ "wallet_found_if_any" ] = true;
                 }
-                if ( kind === 42197 ) {
+                if ( kind === 42197 && $_GET[ "privkey" ] ) {
                     if ( !shipped_orders.includes( event.tags[ 0 ][ 1 ] ) ) {
-                        if ( $( '.sales_count' ) ) $( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;
+                        $( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;
                         shipped_orders.push( event.tags[ 0 ][ 1 ] );
                         localStorage.shipped_orders = JSON.stringify( shipped_orders );
                     }
