@@ -35,7 +35,7 @@ You'll be guided through a simple three step procedure: first, backup your "magi
 
 Important! Save your magic string. It contains your private key which you'll need to access your money and manage your store. If you lose your magic string you lose your money. Keep it secret, keep it safe!
 
-Also make sure you withdraw your money from the store frequently. The site uses whisper keys, which are sent to you in dms and not stored anywhere except on whatever relay you use. I personally don't trust nostr relays to store my dms forever so I recommend you withdraw your money quickly when you receive it, don't just let it sit there for weeks on end or the nostr relay you are connected to might delete your dms or go offline and leave you stranded without access to your money
+Also make sure you withdraw your money from the store frequently. The site uses whisper keys, which are sent to you in dms and not stored anywhere except on whatever relays you use. I personally don't trust nostr relays to store my dms forever so I recommend you withdraw your money quickly when you receive it, don't just let it sit there for weeks on end or the nostr relay you are connected to might delete your dms or go offline and leave you stranded without access to your money
 
 # What are some upcoming features?
 
@@ -56,6 +56,8 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [ ] The hebrew hodl -- another model of escrow without a third party is where the buyer and the seller both deposit the full value of the trade into a 2 of 2 address. Then they've got each other by the balls, so to speak, because either one can burn the other one's money. (The name "hebrew hodl" comes from a passage in the bible where Abraham and his servant swore an oath to each other which, in part, involved one of them letting the other one grab him by the balls to prove he had complete confidence in him.) So they'd better not have an irreconcilable dispute or both will lose their money. The only way both make it out ahead is through cooperation. I am thinking about adding all of these escrow models as options that merchants can advertise support for so that users can select one if they don't fully trust the seller. 
 - [ ] Connect your node -- right now Magic Webstore gives you an lnbits account but that is probably not a very scalable model and it's also custodial, meaning everyone will probably eventually get rugpulled by lnbits. To fix that, I want to make it easy for merchants to connect this app to their own node, that way they can only rug themselves. I hope to do this by writing an LND wrapper that lets you expose the "getInvoice" function and the "checkInvoice" function over nostr. We'll see how that goes
 - [ ] Add "loading..." to lightning invoice box in case the user clicks it before the invoice has actually loaded
+- [ ] Add a way to authenticate your store by connecting it to your nostr identity
+- [ ] Let merchants toggle whether an item is enabled or disabled
 - [ ] Add more items to this upcoming features list -- yes, this is a meta feature, but I don't want to think about more stuff to add to this list so just write an issue so I can think about it ok?
 
 # Things that used to be upcoming features but are now added (or fixed, if they were bugs)
