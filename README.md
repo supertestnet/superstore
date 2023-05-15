@@ -57,6 +57,7 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [ ] Connect your node -- right now Magic Webstore gives you an lnbits account but that is probably not a very scalable model and it's also custodial, meaning everyone will probably eventually get rugpulled by lnbits. To fix that, I want to make it easy for merchants to connect this app to their own node, that way they can only rug themselves. I hope to do this by writing an LND wrapper that lets you expose the "getInvoice" function and the "checkInvoice" function over nostr. We'll see how that goes
 - [ ] Add "loading..." to lightning invoice box in case the user clicks it before the invoice has actually loaded
 - [ ] Add a way to authenticate your store by connecting it to your nostr identity
+- [ ] Let merchants toggle whether an item is enabled or disabled
 - [ ] Add more items to this upcoming features list -- yes, this is a meta feature, but I don't want to think about more stuff to add to this list so just write an issue so I can think about it ok?
 
 # Things that used to be upcoming features but are now added (or fixed, if they were bugs)
