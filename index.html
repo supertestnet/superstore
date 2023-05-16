@@ -37,7 +37,7 @@
             margin-bottom: 1rem;
         }
         .make_store {
-        	display: none;
+            display: none;
         }
         .product {
             border: 1px solid black;
@@ -571,7 +571,7 @@
     </script>
     <script>
         var store_id = null;
-    	var products = [];
+        var products = [];
         var private_keys = [];
         var available_utxos = [];
         if ( localStorage[ "shipped_orders" ] ) var shipped_orders = JSON.parse( localStorage[ "shipped_orders" ] ); else var shipped_orders = [];
@@ -591,7 +591,7 @@
             var relays = JSON.parse( decodeURI( $_GET[ "relays" ] ) );
             relay = relays[ 0 ];
         } else {
-            var relays = [relay];
+            var relays = [relay, "wss://relay.wellorder.net", "wss://nostr.oxtr.dev"];
         }
         var relays_obj = {}
         // var socket = new WebSocket( relay );
@@ -730,11 +730,11 @@
                                 $( '.product' ).children[ 4 ].value = ( content.price / 100 ).toFixed( 2 );
                             }
                         } else {
-                        	$$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
-    	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 0 ].value = content.product;
-    	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 1 ].value = content.image;
-    	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 2 ].value = content.description;
-    	                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 3 ].value = content.shipping_zone;
+                            $$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
+                            $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 0 ].value = content.product;
+                            $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 1 ].value = content.image;
+                            $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 2 ].value = content.description;
+                            $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 3 ].value = content.shipping_zone;
                             if ( content.price == "custom" ) {
                                 $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 5 ].children[ 0 ].click();
                             } else {
@@ -744,7 +744,7 @@
                         return;
                     }
                     // console.log( content );
-                    var price = content[ "price" ] / 100;
+                    if ( content[ "price" ] != "custom" ) var price = content[ "price" ] / 100; else price = "custom";
                     var existing_num = $$( '.store_product' ).length;
                     var html = `
                         <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word; margin-bottom: 1rem;">
@@ -753,13 +753,13 @@
                             <div class="product_price"></div>
                             <div style="display: none;" class="shipping_zone"></span></div>
                             <button class="view_product_btn">View product</button>
-                            <button class="add_to_cart">Add to cart</button>
+                            <button class="add_to_cart" data-num="${products.length - 1}">Add to cart</button>
                         </div>
                     `;
                     $( '.store_products' ).innerHTML += ( html );
                     $$( '.store_product .product_image' )[ existing_num ].src = content.image;
                     $$( '.store_product .product_name' )[ existing_num ].innerText = content.product;
-                    if ( content.price == "custom" ) {
+                    if ( price == "custom" ) {
                         $$( '.store_product .product_price' )[ existing_num ].innerHTML = `Set an amount<div>$<input type="number" step="0.01" min="0" style="width: 90%;"></div>`;
                     } else {
                         $$( '.store_product .product_price' )[ existing_num ].innerText = "$" + price.toFixed( 2 );
@@ -769,16 +769,17 @@
                         item.onclick = (e) => {
                             // console.log( content.price, e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ), ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) )
                             $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
+                            price = products[ Number( e.target.getAttribute( "data-num" ) ) ].content.price;
                             cart.push({
                                 item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
-                                price: content.price != "custom" ? ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) : Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].getElementsByTagName( "input" )[ 0 ].value ) * 100,
+                                price: price != "custom" ? ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) : Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].getElementsByTagName( "input" )[ 0 ].value ) * 100,
                                 shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,
                             });
                         }
                     });
                     $$( '.view_product_btn' ).forEach( function( item, index ) {
-                    	item.onclick = (e) => {
-                    		var c2 = products[ index ][ "content" ];
+                        item.onclick = (e) => {
+                            var c2 = products[ index ][ "content" ];
                             $( '.store_products' ).style.display = "none";
                             $( '.blank_view' ).innerHTML = `
                                 <div class="viewed_product">
@@ -797,7 +798,7 @@
                             `;
                             $( '.viewed_product .product_name' ).innerText = c2.product;
                             $( '.viewed_product .product_image' ).src = c2.image;
-                            if ( content.price == "custom" ) {
+                            if ( c2.price == "custom" ) {
                                 $( '.viewed_product .product_price' ).innerHTML = `Set an amount<div>$<input type="number" step="0.01" min="0" style="width: 90%;"></div>`;
                             } else {
                                 $( '.viewed_product .product_price' ).innerText = "$" + ( c2.price / 100 ).toFixed( 2 );
@@ -810,7 +811,7 @@
                                     $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
                                     cart.push({
                                         item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
-                                        price: content.price != "custom" ? ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) : Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].getElementsByTagName( "input" )[ 0 ].value ) * 100,
+                                        price: c2.price != "custom" ? ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) : Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].getElementsByTagName( "input" )[ 0 ].value ) * 100,
                                         shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,                                });
                                     $( '.blank_view' ).style.display = "none";
                                     $( '.store_products' ).style.display = "flex";
@@ -1560,9 +1561,9 @@
                         txinfo[ 3 ] = true;
                     }
                     if ( $_GET[ "debug" ] == "true" || !txinfo[ 0 ] ) {
-	                    if ( !txinfo[ 0 ] ) txinfo[ 0 ] = "abababababababababababababababababababababababababababababababab";
-	                    if ( !txinfo[ 1 ] ) txinfo[ 1 ] = 0;
-	                    if ( !txinfo[ 2 ] ) txinfo[ 2 ] = 0;
+                        if ( !txinfo[ 0 ] ) txinfo[ 0 ] = "abababababababababababababababababababababababababababababababab";
+                        if ( !txinfo[ 1 ] ) txinfo[ 1 ] = 0;
+                        if ( !txinfo[ 2 ] ) txinfo[ 2 ] = 0;
                     }
                     //don't display orders that are not paid for
                     //but do show them if they only *seem* unpaid for but really are
@@ -1579,10 +1580,10 @@
                     //and setting them to 0 I fixed that error while still allowing me
                     //to spend the money that actually *is* in my wallet.
                     if ( shipped_orders.includes( sale[ 2 ] ) ) {
-                    	sale[ 3 ] = 1;
-	                    if ( !txinfo[ 0 ] ) txinfo[ 0 ] = "abababababababababababababababababababababababababababababababab";
-	                    if ( !txinfo[ 1 ] ) txinfo[ 1 ] = 0;
-                    	txinfo[ 2 ] = 0;
+                        sale[ 3 ] = 1;
+                        if ( !txinfo[ 0 ] ) txinfo[ 0 ] = "abababababababababababababababababababababababababababababababab";
+                        if ( !txinfo[ 1 ] ) txinfo[ 1 ] = 0;
+                        txinfo[ 2 ] = 0;
                     }
                     var address_balance = txinfo[ 2 ];
                     // var address_balance = await getAddressBalance( whisper_address, mempoolNetwork );
