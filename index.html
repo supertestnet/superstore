@@ -121,6 +121,23 @@
         .store_name {
             margin-top: 1rem;
         }
+        .toast {
+            box-sizing: border-box;
+            opacity: 0; /* Hidden by default. Visible on click */
+            width: 250px; /* Set a default minimum width */
+            margin-left: -125px; /* Divide value of min-width by 2 */
+            background-color: #02de02; /* Blue background color */
+            color: white; /* White text color */
+            text-align: center; /* Centered text */
+            border-radius: 0.2rem; /* Rounded borders */
+            padding: 0.75rem; /* Padding */
+            position: fixed; /* Sit on top of the screen */
+            z-index: 1; /* Add a z-index if needed */
+            left: 50%; /* Center the toast */
+            bottom: 0rem; /* 30px from the bottom */
+            transition: opacity 0.5s, bottom 0.5s;
+        }
+
         @media screen and (max-width: 600px) {
             .product input, .product select, .product textarea {
                 width: calc( 100% );
@@ -505,6 +522,16 @@
             $( ".black-bg" ).style.display = "block";
             $( ".modal" ).style.display = "block";
         }
+        function showToast( content ) {
+            var x = $( '.toast' );
+            x.innerHTML = content;
+            x.style.bottom = "2rem";
+            x.style.opacity = 1;
+            setTimeout(function(){
+                x.style.bottom = "0px";
+                x.style.opacity = 0;
+            }, 2000);
+        }
         async function getNote( item ) {
             async function isNoteSetYet( note_i_seek ) {
                 return new Promise( function( resolve, reject ) {
@@ -775,6 +802,7 @@
                                 price: price != "custom" ? ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) : Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].getElementsByTagName( "input" )[ 0 ].value ) * 100,
                                 shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,
                             });
+                            showToast( "added to cart" );
                         }
                     });
                     $$( '.view_product_btn' ).forEach( function( item, index ) {
@@ -815,6 +843,7 @@
                                         shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,                                });
                                     $( '.blank_view' ).style.display = "none";
                                     $( '.store_products' ).style.display = "flex";
+                                    showToast( "added to cart" );
                                 }
                             });
                         }
@@ -1735,6 +1764,7 @@
         }
         init();
     </script>
+    <div class="toast"></div>
     <div class="black-bg"></div>
     <div class="modal"></div>
 </body>
