@@ -811,7 +811,7 @@
                             $( '.store_products' ).style.display = "none";
                             $( '.blank_view' ).innerHTML = `
                                 <div class="viewed_product">
-                                    <div style="display: flex; align-items: center; cursor: pointer; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.store_products' ).style.display = 'flex';"><div style="font-weight: bold; font-size: 3rem; margin-right: 0.5rem; line-height: 3rem;">⇦</div><div style="font-weight: bold; font-size: 1.5rem;">Back</div></div>
+                                    <div style="display: flex; align-items: center; cursor: pointer; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.store_products' ).style.display = 'flex';"><div style="display: flex; align-items: center; font-weight: bold; font-size: 3rem; margin-right: 0.5rem;">⇦</div><div style="font-weight: bold; font-size: 1.5rem;">Back</div></div>
                                     <div style="font-weight: bold;">Product</div>
                                     <div><span class="product_name"></span></div><br>
                                     <img class="product_image" style="border: 1px solid black; width: 100%; margin: auto;"><br><br>
@@ -1269,7 +1269,7 @@
             if ( requires_shipping ) shipping_div = `<div>Enter what you want on your shipping label (and, if desired, a message for the merchant)</div><textarea class="shipping_label_form" style="width: 100%; height: 5rem;"></textarea>`
             $( '.blank_view' ).innerHTML = `
                 <div>
-                    <div style="display: flex; align-items: center; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.view_store' ).style.display = 'block';"><div style="font-weight: bold; font-size: 3rem; margin-right: 0.5rem; line-height: 3rem;">⇦</div><div style="font-weight: bold; font-size: 1.5rem;">Back</div></div>
+                    <div style="display: flex; align-items: center; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.view_store' ).style.display = 'block';"><div style="display: flex; align-items: center; font-weight: bold; font-size: 3rem; margin-right: 0.5rem;">⇦</div><div style="font-weight: bold; font-size: 1.5rem;">Back</div></div>
                     <h2>Your cart</h2>
                     <div class="items">${items}</div>
                     ${total_div}
@@ -1288,7 +1288,7 @@
                 if ( $( '.shipping_label_form' ) ) sessionStorage.shipping_label_form = $( '.shipping_label_form' ).value;
                 if ( $( '.edelivery_form' ) ) sessionStorage.edelivery_form = $( '.edelivery_form' ).value;
                 $( '.blank_view' ).innerHTML = `
-                    <div style="display: flex; align-items: center; cursor: pointer;" onclick="renderCart();"><div style="font-weight: bold; font-size: 3rem; margin-right: 0.5rem; line-height: 3rem;">⇦</div><div style="font-weight: bold; font-size: 1.5rem;">Back</div></div>
+                    <div style="display: flex; align-items: center; cursor: pointer;" onclick="renderCart();"><div style="display: flex; align-items: center; font-weight: bold; font-size: 3rem; margin-right: 0.5rem;">⇦</div><div style="font-weight: bold; font-size: 1.5rem;">Back</div></div>
                     <h2>Checkout</h2>
                     Please send <span class="sats_to_pay">${dollarsToSats( ( total / 100 ).toFixed( 2 ) )}</span> sats and wait for your auto-generated receipt (your shipment is not guaranteed til you have your receipt)
                     <br><br>
@@ -1504,7 +1504,7 @@
                 $( '.blank_view' ).style.display = "block";
                 $( '.blank_view' ).innerHTML = `
                     <div>
-                        <div style="display: flex; align-items: center; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.products' ).style.display = 'block';$( '.store_maker' ).parentElement.style.display = 'block';"><div style="font-weight: bold; font-size: 3rem; margin-right: 0.5rem; line-height: 3rem;">⇦</div><div style="font-size: 1.5rem; font-weight: bold;">Back</div></div>
+                        <div style="display: flex; align-items: center; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.products' ).style.display = 'block';$( '.store_maker' ).parentElement.style.display = 'block';"><div style="display: flex; align-items: center; font-weight: bold; font-size: 3rem; margin-right: 0.5rem;">⇦</div><div style="font-size: 1.5rem; font-weight: bold;">Back</div></div>
                         <div style="display: flex; flex-wrap: wrap; justify-content: space-between;"><div style="font-weight: bold;">Wallet</div><button class="connect_node">Connect your node</button></div><br>
                         <div class="wallet" style="display: flex;justify-content: space-between;background-color: orange;padding: 0.5rem;align-items: center;"><div>Base layer balance: $<span class="usd_balance">0.00</span> (<span class="btc_balance">0</span>&nbsp;sats)</div><div><button class="withdraw">Withdraw</button></div></div><br>
                 `;
