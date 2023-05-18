@@ -121,6 +121,9 @@
         .store_name {
             margin-top: 1rem;
         }
+        .order_box {
+            width: 100%;
+        }
         .delivery_info {
             max-width: 35ch;
             word-wrap: break-word;
@@ -1654,7 +1657,7 @@
                     if ( sale[ 3 ] ) paid_amount = ( total / 100 ).toFixed( 2 );
                     var delivery_info = (sale[ 0 ][ "shipping_info" ]) ? sale[ 0 ][ "shipping_info" ]:sale[ 0 ][ "edelivery_info" ];
                     var order = `
-                        <div class="minicart order" style="background-color: ${bgcolor};" data-order_id="${sale[ 2 ]}"><div>Delivery info:<br><div class="delivery_info"></div></div><div class="payment_info" style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );var order_id = this.parentElement.parentElement.getAttribute( 'data-order_id' );labelAsShipped( order_id );">${shipped_instructions}</button></div></div>
+                        <div class="minicart order" style="background-color: ${bgcolor};" data-order_id="${sale[ 2 ]}"><div class="order_box">Delivery info:<br><div class="delivery_info"></div></div><div class="payment_info" style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );var order_id = this.parentElement.parentElement.getAttribute( 'data-order_id' );labelAsShipped( order_id );">${shipped_instructions}</button></div></div>
                     `;
                     if ( !txinfo[ 3 ] ) {
                         order += `
