@@ -1707,6 +1707,10 @@
                         return;
                     }
                     var txfee = sats_per_byte * full_size;
+                    if ( from_amount - txfee < 294 ) {
+                        alert( `Unfortunately you do not have enough sats to pay the mining fee necessary to withdraw your money. Your shop only has ${from_amount} sats available and your mining fee would be ${txfee} sats. Try using a lower mining fee rate or make a few more sales to increase the amount of sats you have available to withdraw.` );
+                        return;
+                    }
                     var txhex = craftTransaction( available_utxos, from_amount - txfee, destino, mempoolNetwork );
                     var conf = confirm( `Click ok if this is what you want to do:\n\nAmount this shop has: ${from_amount} sats\n\nMining fee for this tx: ${txfee} sats\n\nAmount you will receive: ${from_amount - txfee} sats\n\nAmount this shop will have leftover: 0 sats\n\nDestination address: ${destino}\n\n` );
                     if ( !conf ) return;
