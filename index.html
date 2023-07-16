@@ -604,7 +604,7 @@
         }
     </script>
     <script>
-        var store_id = null;
+        var store_id = [];
         var products = [];
         var private_keys = [];
         var available_utxos = [];
@@ -686,8 +686,10 @@
                 // console.log('content:', content);
                 if ( kind === 12196 ) {
                     if ( !isValidJson( content ) ) return;
-                    if ( event.id == store_id ) return;
-                    store_id = event.id;
+                    if ( event.created_at <= store_id[ 1 ] ) return;
+                    if ( event.id == store_id[ 0 ] ) return;
+                    store_id[ 0 ] = event.id;
+                    store_id[ 1 ] = event.created_at;
                     content = JSON.parse( content );
                     if ( "lnbits_secret" in content ) {
                         if ( $_GET[ "privkey" ] ) localStorage[ "wallet_info" ] = decrypt( privKey, pubKey, content[ "lnbits_secret" ] );
@@ -754,6 +756,7 @@
                     products.push( {"id": event.id, content} );
                     if ( $_GET[ "privkey" ] ) {
                         if ( !$( '.product' ).children[ 0 ].value ) {
+                            $( '.product' ).setAttribute( "data-id", event.id );
                             $( '.product' ).children[ 0 ].value = content.product;
                             $( '.product' ).children[ 1 ].value = content.image;
                             $( '.product' ).children[ 2 ].value = content.description;
@@ -765,6 +768,7 @@
                             }
                         } else {
                             $$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
+                            $$( '.product' )[ $$( '.product' ).length - 2 ].setAttribute( "data-id", event.id );
                             $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 0 ].value = content.product;
                             $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 1 ].value = content.image;
                             $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 2 ].value = content.description;
@@ -858,10 +862,6 @@
                 }
             }
         }
-        // Object.keys( relays_obj ).forEach( function( relay ) {
-        //     relays_obj[ relay ].addEventListener( 'message', handleMessage );
-        // });
-        // socket.addEventListener( 'message', handleMessage );
         async function getSignedEvent(event, privateKey) {
             var eventData = JSON.stringify([
                 0,                    // Reserved for future use
@@ -913,82 +913,6 @@
             dmsg = decryptedMessage + decipher.final( "utf8" );
             return dmsg;
         }
-        // async function getNostrNote( pubkey, kind ) {
-        //     var started_waiting_time = Math.floor( Date.now() / 1000 );
-        //     var socket = new WebSocket( relay );
-        //     var note = "";
-        //     socket.addEventListener( 'message', async function( event ) {
-        //         var event = JSON.parse( event.data );
-        //         if ( event[ 2 ] && event[ 2 ].kind == 4 && event[ 2 ].pubkey == pubKey ) {
-        //             var i; for ( i=0; i<event[ 2 ].tags.length; i++ ) {
-        //                 if ( event[ 2 ].tags[ i ] && event[ 2 ].tags[ i ][ 1 ] ) {
-        //                     var recipient = event[ 2 ].tags[ i ][ 1 ];
-        //                     if ( recipient == pubKey ) {
-        //                         var decrypted_message = decrypt( privKey, event[ 2 ].pubkey, event[ 2 ].content );
-        //                         if ( id != event[ 2 ].id ) {
-        //                             return;
-        //                         } else {
-        //                             note = ( decrypted_message );
-        //                         }
-        //                     } else if ( event[ 2 ].pubkey == pubKey ) {
-        //                         note = ( decrypt( privKey, recipient, event[ 2 ].content ) );
-        //                     }
-        //                 }
-        //             }
-        //         } else if ( event[ 2 ] && ( event[ 2 ].kind == kind ) && event[ 2 ].pubkey == pubKey ) {
-        //             var sig = event[ 2 ].sig;
-        //             var eventData = JSON.stringify([
-        //                 0,                    // Reserved for future use
-        //                 event[ 2 ]['pubkey'],        // The sender's public key
-        //                 event[ 2 ]['created_at'],    // Unix timestamp
-        //                 event[ 2 ]['kind'],        // Message “kind” or type
-        //                 event[ 2 ]['tags'],        // Tags identify replies/recipients
-        //                 event[ 2 ]['content']        // Your note contents
-        //             ]);
-        //             var id  = sha256( eventData ).toString( 'hex' );
-        //             var pubKeyPlusOne = ( BigInt( "0x" + pubKey ) + BigInt( "0x" + pubKey ) ).toString( 16 ).substring( 0, 64 );
-        //             var valid = await nobleSecp256k1.schnorr.verify( sig, id, pubKey );
-        //             if ( valid ) note = ( event[ 2 ].content );
-        //         }
-        //     });
-        //     socket.addEventListener( 'open', function open() {
-        //         var randomid = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
-        //         var filter = {
-        //             "#p": [
-        //                 pubkey
-        //             ]
-        //         }
-        //         var subscription = [ "REQ", randomid, filter ];
-        //         subscription = JSON.stringify( subscription );
-        //         var chaser = [ "CLOSE", randomid ];
-        //         chaser = JSON.stringify( chaser );
-        //         socket.send( subscription );
-        //         setTimeout( function() {socket.send( chaser );}, 1000 );
-        //         setTimeout( function() {socket.close();}, 2000 );
-        //     });
-        //     async function isNoteSetYet( note_i_seek ) {
-        //         return new Promise( function( resolve, reject ) {
-        //             if ( !note_i_seek ) {
-        //                 var current_time = Math.floor( Date.now() / 1000 );
-        //                 if ( started_waiting_time + 5 < current_time ) {
-        //                     //resolve( "time is up" );
-        //                 }
-        //                 setTimeout( async function() {
-        //                     var msg = await isNoteSetYet( note );
-        //                     resolve( msg );
-        //                 }, 100 );
-        //             } else {
-        //                 resolve( note_i_seek );
-        //             }
-        //         });
-        //     }
-        //     async function getTimeoutData() {
-        //         var note_i_seek = await isNoteSetYet( note );
-        //         return note_i_seek;
-        //     }
-        //     var returnable = await getTimeoutData();
-        //     return returnable;
-        // }
     </script>
     <script>
         async function ensureWalletIsAvailable() {
@@ -1158,7 +1082,6 @@
             });
         }
         $( '.preview' ).onclick = (e) => {
-            console.log( 0 );
             var checked = e.target.parentElement.children[ 5 ].children[ 0 ].checked;
             var price = !checked ? Number( e.target.parentElement.children[ 4 ].value ):`Set an amount<div>$<input style="width: 90%;"></div>`;
             if ( typeof price == "number" ) price = "$" + price.toFixed( 2 );
@@ -1186,14 +1109,12 @@
             var product_ids = [];
             var i; for ( i=0; i<$$( '.product' ).length; i++ ) {
                 var array = [...$$( '.product' )[ i ].children];
-                console.log( array );
                 array.pop();
                 array.pop();
                 var checked = array[ array.length - 1 ].children[ 0 ].checked;
                 array.pop();
                 array.forEach( ( item, index ) => array[ index ] = item.value);
                 array.push( checked );
-                console.log( array );
                 var obj = {
                     product: array[ 0 ],
                     image: array[ 1 ],
@@ -1210,7 +1131,6 @@
                     "pubkey"     : pubKey,
                 }
                 var signedEvent = await getSignedEvent(event, privKey);
-                console.log( "signed product event:", signedEvent );
                 product_ids.push( signedEvent.id );
                 Object.keys( relays_obj ).forEach( function( relay ) {
                     relays_obj[ relay ].send(JSON.stringify([ "EVENT", signedEvent ]));
@@ -1221,7 +1141,6 @@
                 $( '.progressBar' ).style.width = percent;
                 $( '.status' ).innerText = String( ( Number( i ) + Number( 1 ) ) ) + " out of " + String( $$( '.product' ).length ) + " products created";
             }
-            console.log( "product ids:", product_ids );
             var store_info = {}
             store_info[ "whisper_address_linking_key" ] = original_pubkey;
             await ensureWalletIsAvailable();
@@ -1238,7 +1157,6 @@
                 "pubkey"     : pubKey,
             }
             var signedEvent = await getSignedEvent(event, privKey);
-            console.log( "signed store event:", signedEvent );
             Object.keys( relays_obj ).forEach( function( relay ) {
                 relays_obj[ relay ].send(JSON.stringify([ "EVENT", signedEvent ]));
             });
@@ -1255,8 +1173,6 @@
             var content = `Success, <a href="${shareable}" target="_blank">your store</a> is now ready. When you X out of this popup you will be redirected to its backend automatically.`;
             showModal( content, true );
             await getNote( "modal_cleared" );
-            //alert( "Here is your sharable store url:\n\n" + url + "?pubkey=" + original_pubkey +
-            // "\n\nHere is your private management url:\n\n" + url + "?privkey=" + privKey );
             window.location.href = private;
         }
         var renderCart = () => {
@@ -1359,7 +1275,6 @@
                     var content = `<p>Thank you for your business. Here is your receipt:</p><p style="font-weight: bold;">Items purchased</p>${receipt_items}<p>Total: $${( total / 100 ).toFixed( 2 )}</p><p>Proof of payment: ${whisper_key}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
                     showModal( content, true );
                     await getNote( "modal_cleared" );
-                    // alert( `Thank you for your business. Here is your proof of payment: ${whisper_key}\n\nKeep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.` );
                 }
             }
         }
@@ -1720,7 +1635,6 @@
                         var content = `<p>Success! You can <a href="https://mempool.space/${mempoolNetwork}tx/${txid}:0" target="_blank">view your transaction here</a></p>`;
                         showModal( content, true );
                         await getNote( "modal_cleared" );
-                        // alert( `Success! You can view your transaction here: https://mempool.space/${mempoolNetwork}tx/${txid}` );
                     } else {
                         sessionStorage.removeItem( "modal_cleared" );
                         var content = `<p>Oh no, there was a transaction failure! Try broadcasting your raw transaction <a href="https://mempool.space/${mempoolNetwork}tx/push" target="_blank">here</a></p><p>${txhex}</p>`;
@@ -1755,15 +1669,6 @@
                         relays_obj[ relay ].addEventListener( 'open', openConnection );
                     }
                 });
-                // if ( socket.readyState != 1 ) {
-                //     alert( "You lost your connection to your relay. If you receive this message twice, please refresh your browser." );
-                //     socket = new WebSocket( relay );
-                //     socket.removeEventListener( 'open', openConnection );
-                //     socket.removeEventListener( 'message', handleMessage );
-                //     socket = new WebSocket( relay );
-                //     socket.addEventListener( 'message', handleMessage );
-                //     socket.addEventListener( 'open', openConnection );
-                // }
                 checkHeartbeat();
             }, 10000 );
         }
