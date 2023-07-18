@@ -1660,6 +1660,7 @@
                 //it may detect a connection loss on pageload
                 Object.keys( relays_obj ).forEach( function( relay ) {
                     if ( relays_obj[ relay ].readyState != 1 ) {
+                        var msg = `You lost your connection to this relay: ${relay}. If you receive this message several times, please refresh your browser. If the issue persists, `;
                         if ( !$_GET[ "privkey" ] ) {
                             msg += `please ask the store owner to fix the issue.`;
                         } else {
