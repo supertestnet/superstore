@@ -1664,7 +1664,7 @@
                         if ( !$_GET[ "privkey" ] ) {
                             msg += `please ask the store owner to fix the issue.`;
                         } else {
-                            msg += `please replace the relay (your current set of relays is in your url bar) with another one from this list: https://nostr.watch, then press enter, then resubmit your store with your new set of relays, then click "view store" and share your updated store link publicly so that people stop using the old one with the relay that isn't working.`;
+                            msg += `please replace the relay (your current set of relays is in your url bar) with another one from this list: https://nostr.watch, then press enter, then resubmit your store with your new set of relays, then click "view store" and share your updated store link publicly so that people stop using the old one with the relay that isn't working. If this message is confusing, please ask the developer of this app, Super Testnet, for assistance by raising an issue on his github: github.com/supertestnet/superstore/`;
                         }
                         alert( msg );
                         relays_obj[ relay ] = new WebSocket( relay );
