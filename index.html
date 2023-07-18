@@ -1660,7 +1660,12 @@
                 //it may detect a connection loss on pageload
                 Object.keys( relays_obj ).forEach( function( relay ) {
                     if ( relays_obj[ relay ].readyState != 1 ) {
-                        alert( "You lost your connection to one of your relays. If you receive this message several times, please refresh your browser." );
+                        if ( !$_GET[ "privkey" ] ) {
+                            msg += `please ask the store owner to fix the issue.`;
+                        } else {
+                            msg += `please replace the relay (your current set of relays is in your url bar) with another one from this list: https://nostr.watch, then press enter, then resubmit your store with your new set of relays, then click "view store" and share your updated store link publicly so that people stop using the old one with the relay that isn't working.`;
+                        }
+                        alert( msg );
                         relays_obj[ relay ] = new WebSocket( relay );
                         relays_obj[ relay ].removeEventListener( 'open', openConnection );
                         relays_obj[ relay ].removeEventListener( 'message', handleMessage );
