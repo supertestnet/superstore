@@ -1210,6 +1210,12 @@
                 }
                 if ( $( '.shipping_label_form' ) ) sessionStorage.shipping_label_form = $( '.shipping_label_form' ).value;
                 if ( $( '.edelivery_form' ) ) sessionStorage.edelivery_form = $( '.edelivery_form' ).value;
+                var memo = sessionStorage.shipping_label_form;
+                if ( !memo ) memo = sessionStorage.edelivery_form;
+                if ( !memo ) memo = "Donation";
+                //shorten the memo to 159 characters because the max number of bytes the memo field
+                //can be is 639 and the max size of a utf8 character is 4 bytes and floor(639/4)=159
+                memo = memo.substring( 0, 159 );
                 $( '.blank_view' ).innerHTML = `
                     <div style="display: flex; align-items: center; cursor: pointer;" onclick="renderCart();"><div style="display: flex; align-items: center; font-weight: bold; font-size: 3rem; margin-right: 0.5rem;">⇦</div><div style="font-weight: bold; font-size: 1.5rem;">Back</div></div>
                     <h2>Checkout</h2>
@@ -1233,7 +1239,7 @@
                         $( '.bl_box' ).style.display = "none";
                         $( '.ln_box' ).style.display = "block";
                     }
-                    getInvoice( total );
+                    getInvoice( total, memo );
                 }
                 var div = document.createElement( "div" );
                 div.className = "bl_box";
@@ -1279,8 +1285,10 @@
             }
         }
         $( '.view_cart' ).onclick = renderCart;
-        var getInvoice = async ( total ) => {
-            var invoice_data = await postData( `${ln_domain}/api/v1/payments`, `{"out": false, "amount": ${Number( $( '.sats_to_pay' ).innerText )}}`, "application/json", ln_readkey );
+        var getInvoice = async ( total, memo ) => {
+            $( '.ln_box' ).innerHTML = `Loading...(if this doesn't load after 30 seconds, notify the store admin)`;
+            var invoice_data = await postData( `${ln_domain}/api/v1/payments`, `{"out": false, "amount": ${Number( $( '.sats_to_pay' ).innerText )}, "memo": "${memo}"}`, "application/json", ln_readkey );
+            $( '.ln_box' ).innerHTML = ``;
             $( '.ln_box' ).append( createQR( JSON.parse( invoice_data )[ "payment_request" ] ) );
             $( '.ln_box' ).append( JSON.parse( invoice_data )[ "payment_request" ] );
             await loopTilInvoiceIsPaid( JSON.parse( invoice_data )[ "payment_hash" ] );
