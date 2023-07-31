@@ -1215,6 +1215,7 @@
                 if ( !memo ) memo = "Donation";
                 //eliminate all linebreaks from the memo
                 memo = memo.replaceAll( "\n", " | " );
+                memo = memo.replaceAll( " |  | ", " | " );
                 //shorten the memo to 159 characters because the max number of bytes the memo field
                 //can be is 639 and the max size of a utf8 character is 4 bytes and floor(639/4)=159
                 memo = memo.substring( 0, 159 );
