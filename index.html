@@ -1623,6 +1623,10 @@
                         });
                     }
                     var destino = prompt( "Enter the bitcoin address where you want your sats to go" );
+                    if ( !destino ) {
+                        alert( "You entered an invalid bitcoin address. Please try again." );
+                        return;
+                    }
                     var base_size = 200;
                     var full_size = base_size + ( available_utxos.length * 50 );
                     var fee_options = await getThreeFeeRates( mempoolNetwork );
