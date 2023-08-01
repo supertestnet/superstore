@@ -625,7 +625,7 @@
             var relays = JSON.parse( decodeURI( $_GET[ "relays" ] ) );
             relay = relays[ 0 ];
         } else {
-            var relays = [relay, "wss://relay.damus.io", "wss://nostr.uthark.com"];
+            var relays = [relay, "wss://nostr.noones.com", "wss://nos.lol"];
         }
         var relays_obj = {}
         // var socket = new WebSocket( relay );
@@ -940,65 +940,60 @@
         async function getNostrNote( id ) {
             var started_waiting_time = Math.floor( Date.now() / 1000 );
             var note = "";
-            var i; for ( i=0; i<relays.length; i++ ) {
-                var myrelay = relays[ i ];
-                socket = new WebSocket( myrelay );
-                socket.addEventListener( 'message', async function( event ) {
-                    var event = JSON.parse( event.data );
-                    if ( !event[ 2 ] ) return;
-                    // console.log( "got an event!", event );
-                    var sig = event[ 2 ].sig;
-                    var eventData = JSON.stringify([
-                        0,                  // Reserved for future use
-                        event[ 2 ]['pubkey'],       // The sender's public key
-                        event[ 2 ]['created_at'],   // Unix timestamp
-                        event[ 2 ]['kind'],     // Message “kind” or type
-                        event[ 2 ]['tags'],     // Tags identify replies/recipients
-                        event[ 2 ]['content']       // Your note contents
-                    ]);
-                    var id  = sha256( eventData ).toString( 'hex' );
-                    var pubKeyPlusOne = ( BigInt( "0x" + pubKey ) + BigInt( "0x" + pubKey ) ).toString( 16 ).substring( 0, 64 );
-                    var valid = await nobleSecp256k1.schnorr.verify( sig, id, event[ 2 ].pubkey );
-                    if ( valid ) note = event[ 2 ].content;
-                });
-                socket.addEventListener( 'open', function open() {
-                    var randomid = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
-                    var filter = {
-                        "ids": [
-                            id
-                        ]
-                    }
-                    var subscription = [ "REQ", randomid, filter ];
-                    subscription = JSON.stringify( subscription );
-                    var chaser = [ "CLOSE", randomid ];
-                    chaser = JSON.stringify( chaser );
-                    socket.send( subscription );
-                    setTimeout( function() {socket.send( chaser );}, 1000 );
-                    setTimeout( function() {socket.close();}, 2000 );
-                });
-                async function isNoteSetYet( note_i_seek ) {
-                    return new Promise( function( resolve, reject ) {
-                        if ( !note_i_seek ) {
-                            var current_time = Math.floor( Date.now() / 1000 );
-                            if ( started_waiting_time + 5 < current_time ) {
-                                resolve( "time is up" );
-                            }
-                            setTimeout( async function() {
-                                var msg = await isNoteSetYet( note );
-                                resolve( msg );
-                            }, 100 );
-                        } else {
-                            resolve( note_i_seek );
+            var rand = Math.floor( Math.random() * Object.keys( relays_obj ).length );
+            var socket = relays_obj[ Object.keys( relays_obj )[ rand ] ];
+            socket.addEventListener( 'message', async function( event ) {
+                var event = JSON.parse( event.data );
+                console.log( `got an event from this relay: ${Object.keys( relays_obj )[ rand ]}`, event );
+                if ( event[ 3 ] && ( event[ 3 ].includes( "have this event" ) || event[ 3 ].includes( "duplicate: exists" ) ) ) note = "relay has event";
+                if ( !event[ 2 ] || event[ 2 ] === true || event[ 2 ] === false ) return;
+                var sig = event[ 2 ].sig;
+                var eventData = JSON.stringify([
+                    0,                  // Reserved for future use
+                    event[ 2 ]['pubkey'],       // The sender's public key
+                    event[ 2 ]['created_at'],   // Unix timestamp
+                    event[ 2 ]['kind'],     // Message “kind” or type
+                    event[ 2 ]['tags'],     // Tags identify replies/recipients
+                    event[ 2 ]['content']       // Your note contents
+                ]);
+                var id  = sha256( eventData ).toString( 'hex' );
+                var pubKeyPlusOne = ( BigInt( "0x" + pubKey ) + BigInt( "0x" + pubKey ) ).toString( 16 ).substring( 0, 64 );
+                var valid = await nobleSecp256k1.schnorr.verify( sig, id, event[ 2 ].pubkey );
+                if ( valid ) note = event[ 2 ].content;
+            });
+            socket.addEventListener( 'open', function open() {
+                var randomid = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
+                var filter = {"ids": [ id ]}
+                var subscription = [ "REQ", randomid, filter ];
+                subscription = JSON.stringify( subscription );
+                var chaser = [ "CLOSE", randomid ];
+                chaser = JSON.stringify( chaser );
+                socket.send( subscription );
+                setTimeout( function() {socket.send( chaser );}, 1000 );
+                setTimeout( function() {socket.close();}, 2000 );
+            });
+            async function isNoteSetYet( note_i_seek ) {
+                return new Promise( function( resolve, reject ) {
+                    if ( !note_i_seek ) {
+                        var current_time = Math.floor( Date.now() / 1000 );
+                        if ( started_waiting_time + 5 < current_time ) {
+                            resolve( "time is up" );
                         }
-                    });
-                }
-                async function getTimeoutData() {
-                    var note_i_seek = await isNoteSetYet( note );
-                    return note_i_seek;
-                }
-                var returnable = await getTimeoutData();
-                return returnable;
+                        setTimeout( async function() {
+                            var msg = await isNoteSetYet( note );
+                            resolve( msg );
+                        }, 100 );
+                    } else {
+                        resolve( note_i_seek );
+                    }
+                });
             }
+            async function getTimeoutData() {
+                var note_i_seek = await isNoteSetYet( note );
+                return note_i_seek;
+            }
+            var returnable = await getTimeoutData();
+            return returnable;
         }
         var eventWasReplayedTilSeen = async event => {
             var note = await getNostrNote( event.id );
