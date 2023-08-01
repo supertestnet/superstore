@@ -41,7 +41,6 @@ Also make sure you withdraw your money from the store frequently. The site uses 
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
 
-- [ ] In "Manage Sales," use each purchased item's product id to determine its price *should* be
 - [ ] Create a uuid for each order and put it in the invoice description
 - [ ] On a lightning payment's "Inspect transaction" link, instead of opening to lnbits, show a modal with instructions: "open lnbits, enter this in the searchbar"
 - [ ] Educate merchants about resources like thebitcoincompany.com where they can use their earnings to buy visa gift cards -- e.g. merchants with a fiat webshop can load a visa card via bitcoin and unload it as usd in their regular shop, thus putting their bitcoin earnings into their regular workflow
@@ -70,6 +69,7 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [x] Portable shipping status -- previously when you click Shipped on an order, Magic Webstore stored the fact that you shipped that product in your browser's local storage. If you did that on your computer and then went to manage your store on your phone, your phone wouldn't know you shipped the product, so it would still show it as needing to be shipped. (Unless the money went into a bitcoin address and then you withdrew it.) Now I made it so that when you click Shipped on an order, Magic Webstore sends a dm that references the shipped order in a tag, and then if you switch devices Magic Webstore can load those dms and thus know which orders you shipped.
 - [x] Better error handling -- sometimes mempool.space's api starts rate-limiting you, which causes errors, which can stop the page from running. Worst case scenario: you just paid for an order when the page crashes and you lose your money forever.
 - [x] Change "sign up" to "get started"
-- [x] Include the product id with each product in a customer's order
 - [x] Revise homepage to look more like an altcoin website such as getmonero.org -- they really know how to make a site look nice
 - [x] Give merchants a button to let customers set the price on an item (e.g. for "donation" items or "pay what you want" items)
+- [x] Include the product id with each product in a customer's order
+- [x] In "Manage Sales," use each purchased item's product id to determine its price *should* be
