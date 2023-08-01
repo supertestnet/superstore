@@ -1005,7 +1005,9 @@
             if ( note != "time is up" ) return true;
             console.log( "replaying..." );
             Object.keys( relays_obj ).forEach( function( relay ) {
-                relays_obj[ relay ].send(JSON.stringify([ "EVENT", event ]));
+                try {
+                    relays_obj[ relay ].send(JSON.stringify([ "EVENT", event ]));
+                } catch ( e ) {}
             });
             var was_seen = await eventWasReplayedTilSeen( event );
             return was_seen;
