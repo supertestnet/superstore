@@ -809,6 +809,7 @@
                             $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
                             price = products[ Number( e.target.getAttribute( "data-num" ) ) ].content.price;
                             cart.push({
+                                id: e.target.parentElement.getAttribute( "data-id" ),
                                 item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
                                 price: price != "custom" ? ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) : Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].getElementsByTagName( "input" )[ 0 ].value ) * 100,
                                 shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,
@@ -819,6 +820,7 @@
                     $$( '.view_product_btn' ).forEach( function( item, index ) {
                         item.onclick = (e) => {
                             var c2 = products[ index ][ "content" ];
+                            var pid = products[ index ][ "id" ];
                             $( '.store_products' ).style.display = "none";
                             $( '.blank_view' ).innerHTML = `
                                 <div class="viewed_product">
@@ -835,6 +837,7 @@
                                     <button class="add_to_cart">Add to cart</button>
                                 </div>
                             `;
+                            $( '.viewed_product' ).setAttribute( "data-id", pid );
                             $( '.viewed_product .product_name' ).innerText = c2.product;
                             $( '.viewed_product .product_image' ).src = c2.image;
                             if ( c2.price == "custom" ) {
@@ -849,6 +852,7 @@
                                 item.onclick = (e) => {
                                     $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
                                     cart.push({
+                                        id: e.target.parentElement.getAttribute( "data-id" ),
                                         item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
                                         price: c2.price != "custom" ? ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) : Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].getElementsByTagName( "input" )[ 0 ].value ) * 100,
                                         shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,                                });
