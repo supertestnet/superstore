@@ -1660,14 +1660,16 @@
                     var names_and_prices = [];
                     sale[ 1 ].forEach( function( item, index ) {
                         var item_price = Number( item[ "price" ] );
+                        var item_name = item[ "item" ];
                         var claimed_price = Number( item[ "price" ] );
                         if ( "id" in item && $( `[data-id="${item[ "id" ]}"]` ) ) {
                             var the_item = $( `[data-id="${item[ "id" ]}"]` );
                             item_price = Number( the_item.getElementsByClassName( "price" )[ 0 ].value ) * 100;
+                            item_name = the_item.getElementsByTagName( "input" )[ 0 ].value;
                         }
                         total = total + item_price;
                         items += `<div class="minicart" style="display: flex; justify-content: space-between; text-align: left;"><div class="product_name"></div><div class="product_price" style="text-align: right;align-self: center;"></div></div>`;
-                        names_and_prices.push( [ item[ "item" ], item[ "price" ] ] );
+                        names_and_prices.push( [ item_name, item_price ] );
                     });
                     var paid_amount = balance_in_dollars;
                     //if the item is shipped, display the amount as paid even if the address is empty
