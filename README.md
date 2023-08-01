@@ -41,8 +41,6 @@ Also make sure you withdraw your money from the store frequently. The site uses 
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
 
-- [ ] Create a uuid for each order and put it in the invoice description
-- [ ] On a lightning payment's "Inspect transaction" link, instead of opening to lnbits, show a modal with instructions: "open lnbits, enter this in the searchbar"
 - [ ] Educate merchants about resources like thebitcoincompany.com where they can use their earnings to buy visa gift cards -- e.g. merchants with a fiat webshop can load a visa card via bitcoin and unload it as usd in their regular shop, thus putting their bitcoin earnings into their regular workflow
 - [ ] Show buyers a measurement of merchant activity -- e.g. did the merchant check their store this week? Did they fulfill any orders this week?
 - [ ] Make a downloadable version with a rest api
@@ -73,3 +71,6 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [x] Give merchants a button to let customers set the price on an item (e.g. for "donation" items or "pay what you want" items)
 - [x] Include the product id with each product in a customer's order
 - [x] In "Manage Sales," use each purchased item's product id to determine its price *should* be
+- [x] I decided not to do the next two because (1) a purchase message's event id already *is* essentially a uuid (2) it is more intuitive to find someone's invoice by searching something personal, like their delivery instructions (3) I recently added the user's delivery instructions to the invoice memo so there will sometimes probably be insufficient room left for a uuid (which, if you are helping someone debug an order, a uuid is less intuitive than asking someone what their delivery instructions were anyway) -- but even though I did not do them I am marking them off as if I did
+- [x] Create a uuid for each order and put it in the invoice description
+- [x] On a lightning payment's "Inspect transaction" link, instead of opening to lnbits, show a modal with instructions: "open lnbits, enter this in the searchbar"
