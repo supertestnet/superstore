@@ -1132,6 +1132,7 @@
                     </div>
                 `;
                 $( '.preview_pane' ).innerHTML = html;
+                $( '.preview_pane' ).style.display = "block";
             }
             product.append( button );
             //append an input and a minus button
@@ -1171,6 +1172,7 @@
                 </div>
             `;
             $( '.preview_pane' ).innerHTML = html;
+            $( '.preview_pane' ).style.display = "block";
         }
         $( '.store_maker' ).onclick = async () => {
             $( '.progress' ).style.display = "block";
@@ -1513,7 +1515,7 @@
                 $( '.splash_screen' ).style.display = "none";
                 $( '.store_maker' ).style.display = "inline";
                 $( '.products' ).style.display = "none";
-                $( '.preview_pane' ).style.display = "none"
+                $( '.preview_pane' ).style.display = "none";
                 $( '.store_maker' ).parentElement.style.display = "none";
                 $( '.blank_view' ).style.display = "block";
                 $( '.blank_view' ).innerHTML = `
