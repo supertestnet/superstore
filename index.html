@@ -696,6 +696,13 @@
                     store_id[ 0 ] = event.id;
                     store_id[ 1 ] = event.created_at;
                     content = JSON.parse( content );
+                    if ( $_GET[ "pubkey" ] && "whisper_address_linking_key" in content ) {
+                        whisper_data[ "linking_pubkey" ] = content[ "whisper_address_linking_key" ];
+                        whisper_data[ "whisper_key" ] = makeSmallPrivkey();
+                        whisper_data[ "whisper_pubkey" ] = getCompressedPubkeyHexFromPrivkeyHex( whisper_data[ "whisper_key" ] );
+                        whisper_data[ "combokey" ] = getCompressedPubkeyHexFromUncompressedPubkeyHex( add2Pubkeys( whisper_data[ "linking_pubkey" ], whisper_data[ "whisper_pubkey" ] ) );
+                        whisper_data[ "whisper_address" ] = getNativeSegwitAddressFromPubkeyHex( whisper_data[ "combokey" ], mempoolNetwork );
+                    }
                     if ( "lnbits_secret" in content ) {
                         if ( $_GET[ "privkey" ] ) localStorage[ "wallet_info" ] = decrypt( privKey, pubKey, content[ "lnbits_secret" ] );
                     }
@@ -1328,15 +1335,15 @@
                 var div = document.createElement( "div" );
                 div.className = "bl_box";
                 $( '.payment_box' ).append( div );
-                $( '.bl_box' ).append( createQR( whisper_address ) );
-                $( '.bl_box' ).append( whisper_address );
-                var was_it_stopped = await loopTilAddressReceivesMoney( whisper_address, mempoolNetwork );
+                $( '.bl_box' ).append( createQR( whisper_data[ "whisper_address" ] ) );
+                $( '.bl_box' ).append( whisper_data[ "whisper_address" ] );
+                var was_it_stopped = await loopTilAddressReceivesMoney( whisper_data[ "whisper_address" ], mempoolNetwork );
                 if ( was_it_stopped == "stopped" ) return;
                 await waitSomeSeconds( 2 );
-                var txinfo = await addressReceivedMoneyInThisTx( whisper_address, mempoolNetwork );
+                var txinfo = await addressReceivedMoneyInThisTx( whisper_data[ "whisper_address" ], mempoolNetwork );
                 if ( txinfo[ 2 ] >= dollarsToSats( ( total / 100 ).toFixed( 2 ) ) ) {
                     var buyer_info = {}
-                    buyer_info[ "whisper_key" ] = whisper_key;
+                    buyer_info[ "whisper_key" ] = whisper_data[ "whisper_key" ];
                     if ( sessionStorage.edelivery_form ) buyer_info[ "edelivery_info" ] = sessionStorage.edelivery_form;
                     if ( sessionStorage.shipping_label_form ) buyer_info[ "shipping_info" ] = sessionStorage.shipping_label_form;
                     var message = JSON.stringify( [ buyer_info, [...cart] ] );
@@ -1365,7 +1372,7 @@
                     });
                     cart = [];
                     if ( $( '.minicart_item_count' ) ) $( '.minicart_item_count' ).innerText = 0;
-                    var content = `<p>Thank you for your business. Here is your receipt:</p><p style="font-weight: bold;">Items purchased</p>${receipt_items}<p>Total: $${( total / 100 ).toFixed( 2 )}</p><p>Proof of payment: ${whisper_key}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
+                    var content = `<p>Thank you for your business. Here is your receipt:</p><p style="font-weight: bold;">Items purchased</p>${receipt_items}<p>Total: $${( total / 100 ).toFixed( 2 )}</p><p>Proof of payment: ${whisper_data[ "whisper_key" ]}</p><p>Keep this on you til you recieve your item. If the seller does not send you your item, contact them and show them your proof of payment.</p>`;
                     showModal( content, true );
                     await getNote( "modal_cleared" );
                 }
@@ -1422,7 +1429,7 @@
             var status = await checkInvoice( pmthash );
             if ( !status[ "paid" ] ) {
                 await waitSomeSeconds( 2 );
-                console.log( "waiting..." );
+                console.log( "waiting for invoice to be paid..." );
                 return loopTilInvoiceIsPaid( pmthash );
             } else {
                 return true;
@@ -1499,12 +1506,7 @@
         openConnections();
         // socket.addEventListener( 'open', openConnection );
         if ( $_GET[ "pubkey" ] ) {
-            //this codeblock creates the whisper address
-            var linking_pubkey = $_GET[ "pubkey" ];
-            var whisper_key = makeSmallPrivkey();
-            var whisper_pubkey = getCompressedPubkeyHexFromPrivkeyHex( whisper_key );
-            var combokey = getCompressedPubkeyHexFromUncompressedPubkeyHex( add2Pubkeys( linking_pubkey, whisper_pubkey ) );
-            var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
+            var whisper_data = {}
             $( '.make_store' ).style.display = "none";
         }
         if ( $_GET[ "privkey" ] ) {
