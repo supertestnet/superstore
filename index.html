@@ -189,7 +189,7 @@
         function makeSmallPrivkey() {
             var privkey = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" );
             if ( privkey.substring( 0, 1 ) != "0" || privkey.substring( 1, 2 ) != "0" ) {
-                    return makeSmallPrivkey()
+                    return makeSmallPrivkey();
             }
             return privkey;
         }
@@ -831,38 +831,29 @@
                             }
                         });
                     }
+                    var i; for ( i=0; i<expected_products_num - 1; i++ ) {
+                        $$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
+                    }
                     $( '.store_products' ).innerHTML = ``;
                     var internal_products = JSON.parse( JSON.stringify( products ) );
+                    internal_products.reverse();
                     var i; for ( i=0; i<internal_products.length; i++ ) {
                         var product = internal_products[ i ];
                         if ( $_GET[ "privkey" ] ) {
-                            if ( !i ) {
-                                $( '.product' ).setAttribute( "data-id", product.id );
-                                $( '.product' ).children[ 0 ].value = product.content.product;
-                                $( '.product' ).children[ 1 ].value = product.content.image;
-                                $( '.product' ).children[ 2 ].value = product.content.description;
-                                $( '.product' ).children[ 3 ].value = product.content.shipping_zone;
-                                if ( product.content.price == "custom" ) {
-                                    $( '.product' ).children[ 5 ].children[ 0 ].click();
-                                } else {
-                                    $( '.product' ).children[ 4 ].value = ( product.content.price / 100 ).toFixed( 2 );
-                                }
+                            var index = expected_products_num - i - 1;
+                            console.log( index, product.content.product );
+                            $$( '.product' )[ index ].setAttribute( "data-id", product.id );
+                            $$( '.product' )[ index ].children[ 0 ].value = product.content.product;
+                            $$( '.product' )[ index ].children[ 1 ].value = product.content.image;
+                            $$( '.product' )[ index ].children[ 2 ].value = product.content.description;
+                            $$( '.product' )[ index ].children[ 3 ].value = product.content.shipping_zone;
+                            if ( product.content.price == "custom" ) {
+                                $$( '.product' )[ index ].children[ 5 ].children[ 0 ].click();
                             } else {
-                                $$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
-                                $$( '.product' )[ $$( '.product' ).length - 2 ].setAttribute( "data-id", product.id );
-                                $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 0 ].value = product.content.product;
-                                $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 1 ].value = product.content.image;
-                                $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 2 ].value = product.content.description;
-                                $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 3 ].value = product.content.shipping_zone;
-                                if ( product.content.price == "custom" ) {
-                                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 5 ].children[ 0 ].click();
-                                } else {
-                                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 4 ].value = ( product.content.price / 100 ).toFixed( 2 );
-                                }
+                                $$( '.product' )[ index ].children[ 4 ].value = ( product.content.price / 100 ).toFixed( 2 );
                             }
                             if ( i == internal_products.length - 1 ) return; else continue;
                         }
-                        // console.log( content );
                         if ( product.content[ "price" ] != "custom" ) var price = product.content[ "price" ] / 100; else price = "custom";
                         var existing_num = $$( '.store_product' ).length;
                         var html = `
