@@ -713,7 +713,7 @@
                         }
                     }
                     if ( "store_name" in content ) {
-                        $( '.store_name' ).value = content[ "store_name" ];
+                        if ( $( '.store_name' ) ) $( '.store_name' ).value = content[ "store_name" ];
                         title.setState( () => title.name = content[ "store_name" ] );
                     }
                     $( '.title' ).style.display = "block";
@@ -765,116 +765,184 @@
                         if ( item[ "id" ] == event.id ) is_seen = true;
                     });
                     if ( is_seen ) return;
-                    products.push( {"id": event.id, content} );
-                    if ( $_GET[ "privkey" ] ) {
-                        if ( !$( '.product' ).children[ 0 ].value ) {
-                            $( '.product' ).setAttribute( "data-id", event.id );
-                            $( '.product' ).children[ 0 ].value = content.product;
-                            $( '.product' ).children[ 1 ].value = content.image;
-                            $( '.product' ).children[ 2 ].value = content.description;
-                            $( '.product' ).children[ 3 ].value = content.shipping_zone;
-                            if ( content.price == "custom" ) {
-                                $( '.product' ).children[ 5 ].children[ 0 ].click();
-                            } else {
-                                $( '.product' ).children[ 4 ].value = ( content.price / 100 ).toFixed( 2 );
-                            }
-                        } else {
-                            $$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
-                            $$( '.product' )[ $$( '.product' ).length - 2 ].setAttribute( "data-id", event.id );
-                            $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 0 ].value = content.product;
-                            $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 1 ].value = content.image;
-                            $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 2 ].value = content.description;
-                            $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 3 ].value = content.shipping_zone;
-                            if ( content.price == "custom" ) {
-                                $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 5 ].children[ 0 ].click();
-                            } else {
-                                $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 4 ].value = ( content.price / 100 ).toFixed( 2 );
-                            }
-                        }
-                        return;
-                    }
-                    // console.log( content );
-                    if ( content[ "price" ] != "custom" ) var price = content[ "price" ] / 100; else price = "custom";
-                    var existing_num = $$( '.store_product' ).length;
-                    var html = `
-                        <div class="store_product" data-id="${event.id}" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word; margin-bottom: 1rem;">
-                            <img class="product_image" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
-                            <div class="product_name"></div>
-                            <div class="product_price"></div>
-                            <div style="display: none;" class="shipping_zone"></span></div>
-                            <button class="view_product_btn">View product</button>
-                            <button class="add_to_cart" data-num="${products.length - 1}">Add to cart</button>
-                        </div>
-                    `;
-                    $( '.store_products' ).innerHTML += ( html );
-                    $$( '.store_product .product_image' )[ existing_num ].src = content.image;
-                    $$( '.store_product .product_name' )[ existing_num ].innerText = content.product;
-                    if ( price == "custom" ) {
-                        $$( '.store_product .product_price' )[ existing_num ].innerHTML = `Set an amount<div>$<input type="number" step="0.01" min="0" style="width: 90%;"></div>`;
-                    } else {
-                        $$( '.store_product .product_price' )[ existing_num ].innerText = "$" + price.toFixed( 2 );
-                    }
-                    $$( '.store_product .shipping_zone' )[ existing_num ].innerText = content.shipping_zone;
-                    $$( '.add_to_cart' ).forEach( function( item ) {
-                        item.onclick = (e) => {
-                            // console.log( content.price, e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ), ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) )
-                            $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
-                            price = products[ Number( e.target.getAttribute( "data-num" ) ) ].content.price;
-                            cart.push({
-                                id: e.target.parentElement.getAttribute( "data-id" ),
-                                item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
-                                price: price != "custom" ? ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) : Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].getElementsByTagName( "input" )[ 0 ].value ) * 100,
-                                shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,
-                            });
-                            showToast( "added to cart" );
-                        }
+                    products.push( {"id": event.id, content, "timestamp": event.created_at} );
+                    products.sort( ( a, b ) => {
+                        return a.timestamp - b.timestamp;
                     });
-                    $$( '.view_product_btn' ).forEach( function( item, index ) {
-                        item.onclick = (e) => {
-                            var c2 = products[ index ][ "content" ];
-                            var pid = products[ index ][ "id" ];
-                            $( '.store_products' ).style.display = "none";
-                            $( '.blank_view' ).innerHTML = `
-                                <div class="viewed_product">
-                                    <div style="display: flex; align-items: center; cursor: pointer; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.store_products' ).style.display = 'flex';"><div style="display: flex; align-items: center; font-weight: bold; font-size: 3rem; margin-right: 0.5rem;">⇦</div><div style="font-weight: bold; font-size: 1.5rem;">Back</div></div>
-                                    <div style="font-weight: bold;">Product</div>
-                                    <div><span class="product_name"></span></div><br>
-                                    <img class="product_image" style="border: 1px solid black; width: 100%; margin: auto;"><br><br>
-                                    <div style="font-weight: bold;">Price</div>
-                                    <div class="product_price"></div><br>
-                                    <div style="font-weight: bold;">Description</div>
-                                    <div class="product_description"></div><br>
-                                    <div style="font-weight: bold;">Ships to</div>
-                                    <div class="shipping_zone"></div><br>
+                    $( '.products' ).innerHTML = `<div class="product"><input placeholder="product name"><input placeholder="image url"><textarea placeholder="description" class="desc"></textarea><select placeholder="shipping zone"><option>--- Shipping zone ---</option><option>Free (digital)</option><option>Worldwide</option><option>Europe</option><option>Australia</option><option>Austria</option><option>Belgium</option><option>Brazil</option><option>Canada</option><option>Denmark</option><option>Finland</option><option>France</option><option>Germany</option><option>Greece</option><option>Hong Kong</option><option>Hungary</option><option>Ireland</option><option>Indonesia</option><option>Israel</option><option>Italy</option><option>Japan</option><option>Kazakhstan</option><option>Korea</option><option>Luxembourg</option><option>Malaysia</option><option>Mexico</option><option>Netherlands</option><option>New Zealand</option><option>Norway</option><option>Poland</option><option>Portugal</option><option>Russia</option><option>Saudi Arabia</option><option>Singapore</option><option>Spain</option><option>Sweden</option><option>Switzerland</option><option>Thailand</option><option>Turkey</option><option>Ukraine</option><option>United Kingdom</option><option>United States</option><option>Vietnam</option><option>China</option></select><input placeholder="usd price (e.g. 5.99)" class="price" type="number" step="0.01" min="0"><div style="margin-bottom: 1rem;"><input type="checkbox" style="width: 1rem;vertical-align: middle;margin-bottom: auto;" id="no_price_0"><label for="no_price_0" style="display: inline;vertical-align: middle;">Let users set the price</label></div><button class="preview">Product preview</button><button class="plus_and_minus">Add another product</button></div>`;
+                    $( '.plus_and_minus' ).onclick = () => {
+                        var product = document.createElement( "div" );
+                        product.className = "product";
+                        var num = Math.floor( Math.random() * 10000000 );
+                        product.innerHTML = `<input placeholder="product name"><input placeholder="image url"><textarea placeholder="description" class="desc"></textarea><select placeholder="shipping zone"><option>--- Shipping zone ---</option><option>Free (digital)</option><option>Worldwide</option><option>Europe</option><option>Australia</option><option>Austria</option><option>Belgium</option><option>Brazil</option><option>Canada</option><option>Denmark</option><option>Finland</option><option>France</option><option>Germany</option><option>Greece</option><option>Hong Kong</option><option>Hungary</option><option>Ireland</option><option>Indonesia</option><option>Israel</option><option>Italy</option><option>Japan</option><option>Kazakhstan</option><option>Korea</option><option>Luxembourg</option><option>Malaysia</option><option>Mexico</option><option>Netherlands</option><option>New Zealand</option><option>Norway</option><option>Poland</option><option>Portugal</option><option>Russia</option><option>Saudi Arabia</option><option>Singapore</option><option>Spain</option><option>Sweden</option><option>Switzerland</option><option>Thailand</option><option>Turkey</option><option>Ukraine</option><option>United Kingdom</option><option>United States</option><option>Vietnam</option><option>China</option></select><input placeholder="usd price (e.g. 5.99)" class="price" type="number" step="0.01" min="0"><div style="margin-bottom: 1rem;"><input type="checkbox" style="width: 1rem;vertical-align: middle;margin-bottom: auto;" id="no_price_${num}"><label for="no_price_${num}" style="display: inline;vertical-align: middle;">Let users set the price</label></div>`;
+                        product.getElementsByTagName( "label" )[ 0 ].previousElementSibling.onclick = () => {
+                            var elem = product.getElementsByTagName( "label" )[ 0 ].previousElementSibling;
+                            if ( elem.checked ) {
+                                elem.parentElement.previousElementSibling.disabled = true;
+                                elem.parentElement.previousElementSibling.style.backgroundColor = "#ccc";
+                                elem.parentElement.previousElementSibling.value = "";
+                            } else {
+                                elem.parentElement.previousElementSibling.disabled = false;
+                                elem.parentElement.previousElementSibling.style.backgroundColor = "transparent";
+                            }
+                        }
+                        var button = document.createElement( "button" );
+                        button.innerText = "Product preview";
+                        button.onclick = (e) => {
+                            var checked = e.target.parentElement.children[ 5 ].children[ 0 ].checked;
+                            var price = !checked ? Number( e.target.parentElement.children[ 4 ].value ):`Set an amount<div>$<input type="number" step="0.01" min="0" style="width: 90%;"></div>`;
+                            if ( typeof price == "number" ) price = "$" + price.toFixed( 2 );
+                            var html = `
+                                <h2>Preview pane</h2>
+                                <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word;">
+                                    <img src="${e.target.parentElement.children[ 1 ].value}" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
+                                    <div>${e.target.parentElement.children[ 0 ].value}</div>
+                                    <div>${price}</div>
+                                    <button>View product</button>
                                     <button class="add_to_cart">Add to cart</button>
                                 </div>
                             `;
-                            $( '.viewed_product' ).setAttribute( "data-id", pid );
-                            $( '.viewed_product .product_name' ).innerText = c2.product;
-                            $( '.viewed_product .product_image' ).src = c2.image;
-                            if ( c2.price == "custom" ) {
-                                $( '.viewed_product .product_price' ).innerHTML = `Set an amount<div>$<input type="number" step="0.01" min="0" style="width: 90%;"></div>`;
-                            } else {
-                                $( '.viewed_product .product_price' ).innerText = "$" + ( c2.price / 100 ).toFixed( 2 );
-                            }
-                            $( '.viewed_product .product_description' ).innerText = c2.description;
-                            $( '.viewed_product .shipping_zone' ).innerText = c2.shipping_zone;
-                            $( '.blank_view' ).style.display = "block";
-                            $$( '.add_to_cart' ).forEach( function( item ) {
-                                item.onclick = (e) => {
-                                    $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
-                                    cart.push({
-                                        id: e.target.parentElement.getAttribute( "data-id" ),
-                                        item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
-                                        price: c2.price != "custom" ? ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) : Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].getElementsByTagName( "input" )[ 0 ].value ) * 100,
-                                        shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,                                });
-                                    $( '.blank_view' ).style.display = "none";
-                                    $( '.store_products' ).style.display = "flex";
-                                    showToast( "added to cart" );
-                                }
-                            });
+                            $( '.preview_pane' ).innerHTML = html;
+                            $( '.preview_pane' ).style.display = "block";
                         }
-                    });
+                        product.append( button );
+                        //append an input and a minus button
+                        var button = document.createElement( "button" );
+                        button.className = "plus_and_minus";
+                        button.innerText = "Remove this product";
+                        button.onclick = () => button.parentElement.remove();
+                        product.append( button );
+                        $( '.products' ).insertBefore( product, $( '.products' ).lastElementChild );
+                        $$( '.price' ).forEach( function( item, index ) {
+                            item.onchange = () => {
+                                item.onkeyup = ( e ) => {
+                                    if ( e.key === "$" ) {
+                                        alert( "Error, please do not include a dollar sign. Just type 5.00 or similar." );
+                                        $$( '.price' )[ index ].blur();
+                                        $$( '.price' )[ index ].value = "";
+                                        return;
+                                    }
+                                }
+                                $$( '.price' )[ index ].value = Number( $$( '.price' )[ index ].value ).toFixed(2);
+                                if ( $$( '.price' )[ index ].value == "0.00" || $$( '.price' )[ index ].value == "0" ) $$( '.price' )[ index ].value = "";
+                            }
+                        });
+                    }
+                    $( '.store_products' ).innerHTML = ``;
+                    var internal_products = JSON.parse( JSON.stringify( products ) );
+                    var i; for ( i=0; i<internal_products.length; i++ ) {
+                        var product = internal_products[ i ];
+                        if ( $_GET[ "privkey" ] ) {
+                            if ( !i ) {
+                                $( '.product' ).setAttribute( "data-id", product.id );
+                                $( '.product' ).children[ 0 ].value = product.content.product;
+                                $( '.product' ).children[ 1 ].value = product.content.image;
+                                $( '.product' ).children[ 2 ].value = product.content.description;
+                                $( '.product' ).children[ 3 ].value = product.content.shipping_zone;
+                                if ( product.content.price == "custom" ) {
+                                    $( '.product' ).children[ 5 ].children[ 0 ].click();
+                                } else {
+                                    $( '.product' ).children[ 4 ].value = ( product.content.price / 100 ).toFixed( 2 );
+                                }
+                            } else {
+                                $$( '.plus_and_minus' )[ $$( '.plus_and_minus' ).length - 1 ].click();
+                                $$( '.product' )[ $$( '.product' ).length - 2 ].setAttribute( "data-id", product.id );
+                                $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 0 ].value = product.content.product;
+                                $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 1 ].value = product.content.image;
+                                $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 2 ].value = product.content.description;
+                                $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 3 ].value = product.content.shipping_zone;
+                                if ( product.content.price == "custom" ) {
+                                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 5 ].children[ 0 ].click();
+                                } else {
+                                    $$( '.product' )[ $$( '.product' ).length - 2 ].children[ 4 ].value = ( product.content.price / 100 ).toFixed( 2 );
+                                }
+                            }
+                            console.log( "name:", $( '.product' ).children[ 0 ].value );
+                            if ( i == internal_products.length - 1 ) return; else continue;
+                        }
+                        // console.log( content );
+                        if ( product.content[ "price" ] != "custom" ) var price = product.content[ "price" ] / 100; else price = "custom";
+                        var existing_num = $$( '.store_product' ).length;
+                        var html = `
+                            <div class="store_product" data-id="${product.id}" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word; margin-bottom: 1rem;">
+                                <img class="product_image" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
+                                <div class="product_name"></div>
+                                <div class="product_price"></div>
+                                <div style="display: none;" class="shipping_zone"></span></div>
+                                <button class="view_product_btn">View product</button>
+                                <button class="add_to_cart" data-num="${internal_products.length - 1}">Add to cart</button>
+                            </div>
+                        `;
+                        $( '.store_products' ).innerHTML += html;
+                        $$( '.store_product .product_image' )[ existing_num ].src = product.content.image;
+                        $$( '.store_product .product_name' )[ existing_num ].innerText = product.content.product;
+                        if ( price == "custom" ) {
+                            $$( '.store_product .product_price' )[ existing_num ].innerHTML = `Set an amount<div>$<input type="number" step="0.01" min="0" style="width: 90%;"></div>`;
+                        } else {
+                            $$( '.store_product .product_price' )[ existing_num ].innerText = "$" + price.toFixed( 2 );
+                        }
+                        $$( '.store_product .shipping_zone' )[ existing_num ].innerText = product.content.shipping_zone;
+                        $$( '.add_to_cart' ).forEach( function( item ) {
+                            item.onclick = (e) => {
+                                // console.log( content.price, e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ), ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) )
+                                $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
+                                price = internal_products[ Number( e.target.getAttribute( "data-num" ) ) ].content.price;
+                                cart.push({
+                                    id: e.target.parentElement.getAttribute( "data-id" ),
+                                    item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
+                                    price: price != "custom" ? ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) : Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].getElementsByTagName( "input" )[ 0 ].value ) * 100,
+                                    shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,
+                                });
+                                showToast( "added to cart" );
+                            }
+                        });
+                        $$( '.view_product_btn' ).forEach( function( item, index ) {
+                            item.onclick = (e) => {
+                                var c2 = internal_products[ index ][ "content" ];
+                                var pid = internal_products[ index ][ "id" ];
+                                $( '.store_products' ).style.display = "none";
+                                $( '.blank_view' ).innerHTML = `
+                                    <div class="viewed_product">
+                                        <div style="display: flex; align-items: center; cursor: pointer; cursor: pointer;" onclick="$( '.blank_view' ).style.display = 'none';$( '.store_products' ).style.display = 'flex';"><div style="display: flex; align-items: center; font-weight: bold; font-size: 3rem; margin-right: 0.5rem;">⇦</div><div style="font-weight: bold; font-size: 1.5rem;">Back</div></div>
+                                        <div style="font-weight: bold;">Product</div>
+                                        <div><span class="product_name"></span></div><br>
+                                        <img class="product_image" style="border: 1px solid black; width: 100%; margin: auto;"><br><br>
+                                        <div style="font-weight: bold;">Price</div>
+                                        <div class="product_price"></div><br>
+                                        <div style="font-weight: bold;">Description</div>
+                                        <div class="product_description"></div><br>
+                                        <div style="font-weight: bold;">Ships to</div>
+                                        <div class="shipping_zone"></div><br>
+                                        <button class="add_to_cart">Add to cart</button>
+                                    </div>
+                                `;
+                                $( '.viewed_product' ).setAttribute( "data-id", pid );
+                                $( '.viewed_product .product_name' ).innerText = c2.product;
+                                $( '.viewed_product .product_image' ).src = c2.image;
+                                if ( c2.price == "custom" ) {
+                                    $( '.viewed_product .product_price' ).innerHTML = `Set an amount<div>$<input type="number" step="0.01" min="0" style="width: 90%;"></div>`;
+                                } else {
+                                    $( '.viewed_product .product_price' ).innerText = "$" + ( c2.price / 100 ).toFixed( 2 );
+                                }
+                                $( '.viewed_product .product_description' ).innerText = c2.description;
+                                $( '.viewed_product .shipping_zone' ).innerText = c2.shipping_zone;
+                                $( '.blank_view' ).style.display = "block";
+                                $$( '.add_to_cart' ).forEach( function( item ) {
+                                    item.onclick = (e) => {
+                                        $( '.minicart_item_count' ).innerText = Number( $( '.minicart_item_count' ).innerText ) + 1;
+                                        cart.push({
+                                            id: e.target.parentElement.getAttribute( "data-id" ),
+                                            item: e.target.parentElement.getElementsByClassName( "product_name" )[ 0 ].innerText,
+                                            price: c2.price != "custom" ? ( Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].innerText.replace( "$", "" ) ) * 100 ) : Number( e.target.parentElement.getElementsByClassName( "product_price" )[ 0 ].getElementsByTagName( "input" )[ 0 ].value ) * 100,
+                                            shipping_zone: e.target.parentElement.getElementsByClassName( "shipping_zone" )[ 0 ].innerText,                                });
+                                        $( '.blank_view' ).style.display = "none";
+                                        $( '.store_products' ).style.display = "flex";
+                                        showToast( "added to cart" );
+                                    }
+                                });
+                            }
+                        });
+                    }
                 }
             }
         }
@@ -1110,64 +1178,6 @@
                 if ( $$( '.price' )[ index ].value == "0.00" || $$( '.price' )[ index ].value == "0" ) $$( '.price' )[ index ].value = "";
             }
         });
-        $( '.plus_and_minus' ).onclick = () => {
-            var product = document.createElement( "div" );
-            product.className = "product";
-            var num = Math.floor( Math.random() * 10000000 );
-            product.innerHTML = `<input placeholder="product name"><input placeholder="image url"><textarea placeholder="description" class="desc"></textarea><select placeholder="shipping zone"><option>--- Shipping zone ---</option><option>Free (digital)</option><option>Worldwide</option><option>Europe</option><option>Australia</option><option>Austria</option><option>Belgium</option><option>Brazil</option><option>Canada</option><option>Denmark</option><option>Finland</option><option>France</option><option>Germany</option><option>Greece</option><option>Hong Kong</option><option>Hungary</option><option>Ireland</option><option>Indonesia</option><option>Israel</option><option>Italy</option><option>Japan</option><option>Kazakhstan</option><option>Korea</option><option>Luxembourg</option><option>Malaysia</option><option>Mexico</option><option>Netherlands</option><option>New Zealand</option><option>Norway</option><option>Poland</option><option>Portugal</option><option>Russia</option><option>Saudi Arabia</option><option>Singapore</option><option>Spain</option><option>Sweden</option><option>Switzerland</option><option>Thailand</option><option>Turkey</option><option>Ukraine</option><option>United Kingdom</option><option>United States</option><option>Vietnam</option><option>China</option></select><input placeholder="usd price (e.g. 5.99)" class="price" type="number" step="0.01" min="0"><div style="margin-bottom: 1rem;"><input type="checkbox" style="width: 1rem;vertical-align: middle;margin-bottom: auto;" id="no_price_${num}"><label for="no_price_${num}" style="display: inline;vertical-align: middle;">Let users set the price</label></div>`;
-            product.getElementsByTagName( "label" )[ 0 ].previousElementSibling.onclick = () => {
-                var elem = product.getElementsByTagName( "label" )[ 0 ].previousElementSibling;
-                if ( elem.checked ) {
-                    elem.parentElement.previousElementSibling.disabled = true;
-                    elem.parentElement.previousElementSibling.style.backgroundColor = "#ccc";
-                    elem.parentElement.previousElementSibling.value = "";
-                } else {
-                    elem.parentElement.previousElementSibling.disabled = false;
-                    elem.parentElement.previousElementSibling.style.backgroundColor = "transparent";
-                }
-            }
-            var button = document.createElement( "button" );
-            button.innerText = "Product preview";
-            button.onclick = (e) => {
-                var checked = e.target.parentElement.children[ 5 ].children[ 0 ].checked;
-                var price = !checked ? Number( e.target.parentElement.children[ 4 ].value ):`Set an amount<div>$<input type="number" step="0.01" min="0" style="width: 90%;"></div>`;
-                if ( typeof price == "number" ) price = "$" + price.toFixed( 2 );
-                var html = `
-                    <h2>Preview pane</h2>
-                    <div class="store_product" style="background-color: lightgrey; border: 1px solid black; border-radius: 1rem; width: 100%; max-width: 13rem; text-align: center; padding: 1rem; word-wrap: break-word;">
-                        <img src="${e.target.parentElement.children[ 1 ].value}" style="border: 1px solid black; width: 100%; max-width: 10rem; margin: auto;">
-                        <div>${e.target.parentElement.children[ 0 ].value}</div>
-                        <div>${price}</div>
-                        <button>View product</button>
-                        <button class="add_to_cart">Add to cart</button>
-                    </div>
-                `;
-                $( '.preview_pane' ).innerHTML = html;
-                $( '.preview_pane' ).style.display = "block";
-            }
-            product.append( button );
-            //append an input and a minus button
-            var button = document.createElement( "button" );
-            button.className = "plus_and_minus";
-            button.innerText = "Remove this product";
-            button.onclick = () => button.parentElement.remove();
-            product.append( button );
-            $( '.products' ).insertBefore( product, $( '.products' ).lastElementChild );
-            $$( '.price' ).forEach( function( item, index ) {
-                item.onchange = () => {
-                    item.onkeyup = ( e ) => {
-                        if ( e.key === "$" ) {
-                            alert( "Error, please do not include a dollar sign. Just type 5.00 or similar." );
-                            $$( '.price' )[ index ].blur();
-                            $$( '.price' )[ index ].value = "";
-                            return;
-                        }
-                    }
-                    $$( '.price' )[ index ].value = Number( $$( '.price' )[ index ].value ).toFixed(2);
-                    if ( $$( '.price' )[ index ].value == "0.00" || $$( '.price' )[ index ].value == "0" ) $$( '.price' )[ index ].value = "";
-                }
-            });
-        }
         $( '.preview' ).onclick = (e) => {
             var checked = e.target.parentElement.children[ 5 ].children[ 0 ].checked;
             var price = !checked ? Number( e.target.parentElement.children[ 4 ].value ):`Set an amount<div>$<input style="width: 90%;"></div>`;
