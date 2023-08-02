@@ -841,7 +841,6 @@
                         var product = internal_products[ i ];
                         if ( $_GET[ "privkey" ] ) {
                             var index = expected_products_num - i - 1;
-                            console.log( index, product.content.product );
                             $$( '.product' )[ index ].setAttribute( "data-id", product.id );
                             $$( '.product' )[ index ].children[ 0 ].value = product.content.product;
                             $$( '.product' )[ index ].children[ 1 ].value = product.content.image;
