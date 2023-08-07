@@ -167,6 +167,9 @@
             .plus_and_minus {
                 margin-left: 0;
             }
+            .modal {
+                max-width: 90%;
+            }
         }
     </style>
     <script>
@@ -1538,6 +1541,7 @@
                         <div class="ln_wallet" style="display: flex;justify-content: space-between;background-color: lightblue;padding: 0.5rem;align-items: center;"><div>Lightning balance: $<span class="usd_balance">0.00</span> (<span class="btc_balance">0</span>&nbsp;sats)</div><div><button class="withdraw">Manage</button></div></div><br>
                 `;
                 $( '.blank_view' ).innerHTML += `
+                        <div class="visa_card" style="display: flex;justify-content: space-between;background-color: pink;padding: 0.5rem;align-items: center;"><div>Buy a visa gift card <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Visa.svg/320px-Visa.svg.png" style="height: 1rem; vertical-align: middle;"></div><div><button class="visa_info">More info</button></div></div><br>
                         <div style="font-weight: bold;">Sales</div><br>
                         <div class="orders"></div>
                     </div>
@@ -1764,6 +1768,12 @@
                 }
                 if ( $$( '.withdraw' )[ 1 ] ) $$( '.withdraw' )[ 1 ].onclick = async () => {
                     window.open( JSON.parse( localStorage[ "wallet_info" ] )[ "wallet_url" ], '_blank' );
+                }
+                $( '.visa_info' ).onclick = () => {
+                    showModal( `<img src="https://upload.wikimedia.org/wikipedia/commons/f/f4/Hsbc-card.jpg" style="width: 100%; max-width: 300px"><p>If you need US dollars for business purposes, use your bitcoin earnings to buy a virtual visa gift card. Any amount greater than $5.00 will instantly get you a digital copy of the card's 16 digit number and 3 digit CVC number. Use a zip code of 94404 (Visa headquarters) if necessary to enter the card into your regular point of sale system. You can even order a physical card for a small fee.</p><p><button class="buy_visa">Buy visa card</button></p>` );
+                    $( '.buy_visa' ).onclick = async () => {
+                        window.open( `https://app.thebitcoincompany.com/giftcard/GiftCard_83215b023391`, '_blank' );
+                    }
                 }
             }
             $( '.manage_sales_btn' ).onclick = manageSales;
