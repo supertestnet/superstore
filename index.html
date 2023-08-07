@@ -673,57 +673,64 @@
             if ( ( !event || event === true ) && type != "EOSE" ) return;
             if ( subId.startsWith( "00" ) ) {
                 if ( kind === 4 ) {
-                    var is_seen = false;
-                    sales.forEach( function( sale ) {
-                        if ( sale[ 2 ] == event.id ) is_seen = true;
-                    })
-                    if ( is_seen ) return;
-                    content = await decrypt(privKey, event.pubkey, content);
-                    if ( !isValidJson( content ) ) return;
-                    content = JSON.parse( content );
-                    if ( content.length != 2 ) return;
-                    if ( !content[ 0 ] ) return;
-                    if ( !content[ 1 ] ) return;
-                    if ( typeof content[ 0 ] != "object" ) return;
-                    if ( typeof content[ 1 ] != "object" ) return;
-                    if ( !content[ 0 ][ "whisper_key" ] && !content[ 0 ][ "pmthash" ] ) return;
-                    if ( !content[ 1 ][ 0 ] ) return;
-                    if ( typeof content[ 1 ][ 0 ] != "object" ) return;
-                    if ( !content[ 1 ][ 0 ][ "item" ] ) return;
-                    if ( !( "price" in content[ 1 ][ 0 ] ) ) return;
-                    if ( typeof content[ 1 ][ 0 ][ "price" ] != "number" ) return;
-                    if ( content[ 1 ][ 0 ][ "price" ] < 0 ) return;
-                    //the following section only applies after I added product
-                    //ids to purchase messages
-                    if ( event.created_at > 1690920685 ) {
-                        if ( !( "id" in content[ 1 ][ 0 ] ) ) return;
-                    }
-                    //if an order had a price of zero then it was a donation
-                    //but there is code down in the section that adds sales
-                    //to the "manage sales" page that does a sanity check by
-                    //ignoring orders that have a 0 balance and say they are
-                    //not yet shipped -- so here I change the shipped status
-                    //of 0-value orders to "shipped" so that they will still
-                    //show up on the manage sales page
-                    var shipped = 0;
-                    if ( content[ 1 ][ 0 ][ "price" ] == 0 ) shipped = 1;
-                    if ( !content[ 1 ][ 0 ][ "shipping_zone" ] ) return;
-                    sales.push( [ ...content, event.id, shipped ] );
-                    if ( "whisper_key" in content[ 0 ] ) {
-                        var whisper_key = content[ 0 ][ "whisper_key" ];
-                        var privkey = addKeys( privKey, whisper_key );
-                        var combokey = getCompressedPubkeyHexFromPrivkeyHex( privkey );
-                        var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
-                        var current_utxos = await getUTXOs( privkey, mempoolNetwork );
-                        var current_balance = 0;
-                        current_utxos.forEach( function( utxo ) {
-                            current_balance = current_balance + Number( utxo[ "amount" ] );
+                    if ( $_GET[ "pubkey" ] ) {
+                        store_meta.setState( () => {
+                            if ( store_meta.order_ids.includes( event.id ) ) return;
+                            store_meta.order_ids.push( event.id );
                         });
                     } else {
-                        var current_balance = 1;
-                    }
-                    if ( !shipped_orders.includes( event.id ) && current_balance ) {
-                        $( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) + 1;
+                        var is_seen = false;
+                        sales.forEach( function( sale ) {
+                            if ( sale[ 2 ] == event.id ) is_seen = true;
+                        })
+                        if ( is_seen ) return;
+                        content = await decrypt(privKey, event.pubkey, content);
+                        if ( !isValidJson( content ) ) return;
+                        content = JSON.parse( content );
+                        if ( content.length != 2 ) return;
+                        if ( !content[ 0 ] ) return;
+                        if ( !content[ 1 ] ) return;
+                        if ( typeof content[ 0 ] != "object" ) return;
+                        if ( typeof content[ 1 ] != "object" ) return;
+                        if ( !content[ 0 ][ "whisper_key" ] && !content[ 0 ][ "pmthash" ] ) return;
+                        if ( !content[ 1 ][ 0 ] ) return;
+                        if ( typeof content[ 1 ][ 0 ] != "object" ) return;
+                        if ( !content[ 1 ][ 0 ][ "item" ] ) return;
+                        if ( !( "price" in content[ 1 ][ 0 ] ) ) return;
+                        if ( typeof content[ 1 ][ 0 ][ "price" ] != "number" ) return;
+                        if ( content[ 1 ][ 0 ][ "price" ] < 0 ) return;
+                        //the following section only applies after I added product
+                        //ids to purchase messages
+                        if ( event.created_at > 1690920685 ) {
+                            if ( !( "id" in content[ 1 ][ 0 ] ) ) return;
+                        }
+                        //if an order had a price of zero then it was a donation
+                        //but there is code down in the section that adds sales
+                        //to the "manage sales" page that does a sanity check by
+                        //ignoring orders that have a 0 balance and say they are
+                        //not yet shipped -- so here I change the shipped status
+                        //of 0-value orders to "shipped" so that they will still
+                        //show up on the manage sales page
+                        var shipped = 0;
+                        if ( content[ 1 ][ 0 ][ "price" ] == 0 ) shipped = 1;
+                        if ( !content[ 1 ][ 0 ][ "shipping_zone" ] ) return;
+                        sales.push( [ ...content, event.id, shipped ] );
+                        if ( "whisper_key" in content[ 0 ] ) {
+                            var whisper_key = content[ 0 ][ "whisper_key" ];
+                            var privkey = addKeys( privKey, whisper_key );
+                            var combokey = getCompressedPubkeyHexFromPrivkeyHex( privkey );
+                            var whisper_address = getNativeSegwitAddressFromPubkeyHex( combokey, mempoolNetwork );
+                            var current_utxos = await getUTXOs( privkey, mempoolNetwork );
+                            var current_balance = 0;
+                            current_utxos.forEach( function( utxo ) {
+                                current_balance = current_balance + Number( utxo[ "amount" ] );
+                            });
+                        } else {
+                            var current_balance = 1;
+                        }
+                        if ( !shipped_orders.includes( event.id ) && current_balance ) {
+                            $( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) + 1;
+                        }
                     }
                 }
                 // console.log('content:', content);
@@ -1209,11 +1216,13 @@
           html: () => {
             var order_or_orders = "orders";
             var time_or_times = "times";
+            var order_or_orders_2 = "orders";
             if ( store_meta.shipment_ids.length == 1 ) order_or_orders = "order";
             if ( store_meta.checkin_ids.length == 1 ) time_or_times = "time";
-            var message = `Store stats: this week, the store owner shipped ${store_meta.shipment_ids.length} ${order_or_orders}`;
+            if ( store_meta.order_ids.length == 1 ) order_or_orders_2 = "order";
+            var message = `Store stats: this week, this store received ${store_meta.order_ids.length} ${order_or_orders_2} and shipped out ${store_meta.shipment_ids.length} ${order_or_orders}.`;
             var now = Math.floor( Date.now() / 1000 );
-            if ( 1692047296 - now < 0 && store_meta.checkin_ids.length ) message += ` and checked for new orders ${store_meta.checkin_ids.length} ${time_or_times}`;
+            if ( 1692047296 - now < 0 && store_meta.checkin_ids.length ) message += ` Its owner also checked for new orders ${store_meta.checkin_ids.length} ${time_or_times}.`;
             var div = document.createElement( "div" );
             div.innerHTML = `
               <p>${message}</p>
@@ -1222,6 +1231,7 @@
           },
           checkin_ids: [],
           shipment_ids: [],
+          order_ids: [],
           setState: (callback) => {
             callback();
             store_meta.render();
@@ -1552,7 +1562,8 @@
             if ( $_GET[ "pubkey"] ) {
                 var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196 ] }
                 var filter2 = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 42197, 42198 ], since: Math.floor( Date.now() / 1000 ) - 604800 }
-                var subscription = [ "REQ", subId, filter, filter2 ];
+                var filter3 = { "#p": [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 4 ], since: Math.floor( Date.now() / 1000 ) - 604800 }
+                var subscription = [ "REQ", subId, filter, filter2, filter3 ];
             }
             if ( $_GET[ "privkey"] ) {
                 var filter  = { "#p": [ pubKey ], kinds: [ 4 ] }
