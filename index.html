@@ -791,6 +791,8 @@
                     }
                 }
                 if ( kind === 42198 && $_GET[ "pubkey" ] ) {
+                    var now = Math.floor( Date.now() / 1000 );
+                    if ( 1692037331 - now > 0 ) $( '.dropper' ).style.display = "none";
                     recent_checkins.setState( () => {
                         if ( recent_checkins.ids.includes( event.id ) ) return;
                         if ( recent_checkins.ids.length > 6 ) return;
