@@ -723,6 +723,8 @@
                 }
                 // console.log('content:', content);
                 if ( kind === 12196 ) {
+                    var now = Math.floor( Date.now() / 1000 );
+                    if ( 1692037331 - now > 0 ) $( '.dropper' ).style.display = "none";
                     if ( !isValidJson( content ) ) return;
                     if ( event.created_at <= store_id[ 1 ] ) return;
                     if ( event.id == store_id[ 0 ] ) return;
@@ -791,8 +793,6 @@
                     }
                 }
                 if ( kind === 42198 && $_GET[ "pubkey" ] ) {
-                    var now = Math.floor( Date.now() / 1000 );
-                    if ( 1692037331 - now > 0 ) $( '.dropper' ).style.display = "none";
                     recent_checkins.setState( () => {
                         if ( recent_checkins.ids.includes( event.id ) ) return;
                         if ( recent_checkins.ids.length > 6 ) return;
