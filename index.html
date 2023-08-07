@@ -24,6 +24,7 @@
         }
         h1 {
             font-size: 2rem;
+            margin: 0;
         }
         h2 {
             font-size: 1.5rem;
@@ -36,8 +37,11 @@
             border: 1px solid grey;
             margin-bottom: 1rem;
         }
-        .make_store {
+        .make_store, .store_meta {
             display: none;
+        }
+        .make_store, .view_store, .store_meta {
+            margin-top: 1rem;
         }
         .product {
             border: 1px solid black;
@@ -109,6 +113,8 @@
         }
         .title {
             display: none;
+            align-items: center;
+            justify-content: space-between;
         }
         .order {
             display: flex;
@@ -143,6 +149,9 @@
             left: 50%; /* Center the toast */
             bottom: 0rem; /* 30px from the bottom */
             transition: opacity 0.5s, bottom 0.5s;
+        }
+        .dropper {
+            transition: transform 0.3s;
         }
 
         @media screen and (max-width: 600px) {
@@ -187,8 +196,6 @@
     </script>
     <script>
         sessionStorage.removeItem( "wallet_found_if_any" );
-        var ln_domain = null;
-        var ln_readkey = null;
         function makeSmallPrivkey() {
             var privkey = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" );
             if ( privkey.substring( 0, 1 ) != "0" || privkey.substring( 1, 2 ) != "0" ) {
@@ -620,6 +627,8 @@
         var products = [];
         var private_keys = [];
         var available_utxos = [];
+        var ln_domain = null;
+        var ln_readkey = null;
         if ( localStorage[ "shipped_orders" ] ) var shipped_orders = JSON.parse( localStorage[ "shipped_orders" ] ); else var shipped_orders = [];
         sessionStorage.clear();
         var sales = [];
@@ -631,6 +640,18 @@
         var pubKey  = getCompressedPubkeyHexFromPrivkeyHex( privKey );
         var original_pubkey = pubKey;
         pubKey      = pubKey.substring( 2 );
+        var signedCheckinEvent = null;
+        var make_checkin_event = async () => {
+            checkin_event = {
+                "content"    : "",
+                "created_at" : Math.floor( Date.now() / 1000 ),
+                "kind"       : 42198,
+                "tags"       : [],
+                "pubkey"     : pubKey,
+            }
+            signedCheckinEvent = await getSignedEvent(checkin_event, privKey);
+        }
+        if ( $_GET[ "privkey" ] ) make_checkin_event();
         // console.log( pubKey );
         if ( $_GET[ "relay" ] ) var relay = $_GET[ "relay" ]; else var relay = "wss://nostrue.com";
         if ( $_GET[ "relays" ] ) {
@@ -729,7 +750,7 @@
                         if ( $( '.store_name' ) ) $( '.store_name' ).value = content[ "store_name" ];
                         title.setState( () => title.name = content[ "store_name" ] );
                     }
-                    $( '.title' ).style.display = "block";
+                    $( '.title' ).style.display = "flex";
                     if ( $_GET[ "pubkey" ] ) $( '.view_store' ).style.display = "block";
                     if ( $_GET[ "privkey" ] ) {
                         $( '.name_instructions' ).innerText = "Manage name";
@@ -768,6 +789,13 @@
                         shipped_orders.push( event.tags[ 0 ][ 1 ] );
                         localStorage.shipped_orders = JSON.stringify( shipped_orders );
                     }
+                }
+                if ( kind === 42198 && $_GET[ "pubkey" ] ) {
+                    recent_checkins.setState( () => {
+                        if ( recent_checkins.ids.includes( event.id ) ) return;
+                        if ( recent_checkins.ids.length > 6 ) return;
+                        recent_checkins.ids.push( event.id );
+                    } );
                 }
             }
             if ( subId.startsWith( "01" ) ) {
@@ -1097,7 +1125,8 @@
     </script>
 </head>
 <body>
-    <div class="title"></div>
+    <div class="title_wrapper"><div class="title"></div></div>
+    <div class="store_meta"></div>
     <div class="splash_screen">Loading...</div>
     <div class="make_store">
         <div class="products">
@@ -1131,14 +1160,14 @@
     </div>
     <div class="blank_view"></div>
     <script>
-        if ( !$_GET[ "pubkey" ] && !$_GET[ "privkey" ] ) $( '.title' ).style.display = "block";
+        if ( !$_GET[ "pubkey" ] && !$_GET[ "privkey" ] ) $( '.title' ).style.display = "flex";
         $( '.store_name' ).value = "";
         var title = {
           html: () => {
             var default_name = "Welcome to Magic Webstore, a simple webstore based on bitcoin";
             var name = title.name ? title.name : default_name;
             return `
-              <h1>${name}</h1>
+              <h1>${name}</h1> <img class="dropper" src="https://static.thenounproject.com/png/716717-200.png" style="height: 2rem; cursor: pointer;">
             `;
           },
           name: "",
@@ -1148,9 +1177,42 @@
           },
           render: () => {
             $( ".title" ).innerHTML = title.html();
+            if ( $_GET[ "privkey" ] ) $( '.dropper' ).style.display = "none";
+            $( '.dropper' ).addEventListener( "click", showMeta );
           }
         };
         title.render();
+        var showMeta = () => {
+            $( '.store_meta' ).style.display = "block";
+            $( '.dropper' ).removeEventListener( "click", showMeta );
+            $( '.dropper' ).addEventListener( "click", hideMeta );
+            $( '.dropper' ).style.transform = `rotate(180deg)`;
+        }
+        var hideMeta = () => {
+            $( '.store_meta' ).style.display = "none";
+            $( '.dropper' ).removeEventListener( "click", hideMeta );
+            $( '.dropper' ).addEventListener( "click", showMeta );
+            $( '.dropper' ).style.transform = `rotate(0deg)`;
+        }
+        var recent_checkins = {
+          html: () => {
+            var div = document.createElement( "div" );
+            div.innerHTML = `
+              <p>The store owner checked for new orders ${recent_checkins.ids.length} times this week</p>
+            `;
+            return div.firstElementChild;
+          },
+          ids: [],
+          setState: (callback) => {
+            callback();
+            recent_checkins.render();
+          },
+          render: () => {
+            $( '.store_meta' ).innerHTML = ``;
+            $( '.store_meta' ).append( recent_checkins.html() );
+          }
+        };
+        recent_checkins.render();
         $( '.store_name' ).onkeyup = () => {
             title.setState( () => title.name = $( '.store_name' ).value );
         }
@@ -1470,7 +1532,8 @@
             var subId   = ( "00" + bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ) ).substring( 0, 16 );
             if ( $_GET[ "pubkey"] ) {
                 var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196, 42197 ] }
-                var subscription = [ "REQ", subId, filter ];
+                var filter2 = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 42198 ], since: Math.floor( Date.now() / 1000 ) - 604800 }
+                var subscription = [ "REQ", subId, filter, filter2 ];
             }
             if ( $_GET[ "privkey"] ) {
                 var filter  = { "#p": [ pubKey ], kinds: [ 4 ] }
@@ -1507,6 +1570,14 @@
             } else {
                 await getNote( "wallet_found_if_any" );
                 ensureWalletIsAvailable();
+            }
+            //if the user is the admin, fire off a message so that
+            //users can see if the admin "checked in" on their store
+            //recently
+            if ( $_GET[ "privkey" ] ) {
+                Object.keys( relays_obj ).forEach( function( relay ) {
+                    relays_obj[ relay ].send(JSON.stringify([ "EVENT", signedCheckinEvent ]));
+                });
             }
         }
         var openConnections = async () => {
