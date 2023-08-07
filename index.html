@@ -43,6 +43,11 @@
         .make_store, .view_store, .store_meta {
             margin-top: 1rem;
         }
+        .store_meta {
+            border: 1px solid black;
+            border-radius: 1rem;
+            padding: 0 1rem;
+        }
         .product {
             border: 1px solid black;
             border-radius: 1rem;
@@ -749,8 +754,6 @@
                     if ( "store_name" in content ) {
                         if ( $( '.store_name' ) ) $( '.store_name' ).value = content[ "store_name" ];
                         title.setState( () => title.name = content[ "store_name" ] );
-                        var now = Math.floor( Date.now() / 1000 );
-                        if ( 1692037331 - now > 0 ) $( '.dropper' ).style.display = "none";
                     }
                     $( '.title' ).style.display = "flex";
                     if ( $_GET[ "pubkey" ] ) $( '.view_store' ).style.display = "block";
@@ -792,12 +795,18 @@
                         localStorage.shipped_orders = JSON.stringify( shipped_orders );
                     }
                 }
+                if ( kind === 42197 && $_GET[ "pubkey" ] ) {
+                    store_meta.setState( () => {
+                        if ( store_meta.shipment_ids.includes( event.id ) ) return;
+                        store_meta.shipment_ids.push( event.id );
+                    });                    
+                }
                 if ( kind === 42198 && $_GET[ "pubkey" ] ) {
-                    recent_checkins.setState( () => {
-                        if ( recent_checkins.ids.includes( event.id ) ) return;
-                        if ( recent_checkins.ids.length > 6 ) return;
-                        recent_checkins.ids.push( event.id );
-                    } );
+                    store_meta.setState( () => {
+                        if ( store_meta.checkin_ids.includes( event.id ) ) return;
+                        if ( store_meta.checkin_ids.length > 6 ) return;
+                        store_meta.checkin_ids.push( event.id );
+                    });
                 }
             }
             if ( subId.startsWith( "01" ) ) {
@@ -1196,25 +1205,32 @@
             $( '.dropper' ).addEventListener( "click", showMeta );
             $( '.dropper' ).style.transform = `rotate(0deg)`;
         }
-        var recent_checkins = {
+        var store_meta = {
           html: () => {
+            var order_or_orders = "orders";
+            var time_or_times = "times";
+            if ( store_meta.shipment_ids.length == 1 ) order_or_orders = "order";
+            if ( store_meta.checkin_ids.length == 1 ) time_or_times = "time";
+            var message = `Store stats: this week, the store owner shipped ${store_meta.shipment_ids.length} ${order_or_orders}`;
+            if ( store_meta.checkin_ids.length ) message += ` and checked for new orders ${store_meta.checkin_ids.length} ${time_or_times}`;
             var div = document.createElement( "div" );
             div.innerHTML = `
-              <p>The store owner checked for new orders ${recent_checkins.ids.length} times this week</p>
+              <p>${message}</p>
             `;
             return div.firstElementChild;
           },
-          ids: [],
+          checkin_ids: [],
+          shipment_ids: [],
           setState: (callback) => {
             callback();
-            recent_checkins.render();
+            store_meta.render();
           },
           render: () => {
             $( '.store_meta' ).innerHTML = ``;
-            $( '.store_meta' ).append( recent_checkins.html() );
+            $( '.store_meta' ).append( store_meta.html() );
           }
         };
-        recent_checkins.render();
+        store_meta.render();
         $( '.store_name' ).onkeyup = () => {
             title.setState( () => title.name = $( '.store_name' ).value );
         }
@@ -1533,8 +1549,8 @@
             console.log( "connected to " + this.url );
             var subId   = ( "00" + bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ) ).substring( 0, 16 );
             if ( $_GET[ "pubkey"] ) {
-                var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196, 42197 ] }
-                var filter2 = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 42198 ], since: Math.floor( Date.now() / 1000 ) - 604800 }
+                var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196 ] }
+                var filter2 = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 42197, 42198 ], since: Math.floor( Date.now() / 1000 ) - 604800 }
                 var subscription = [ "REQ", subId, filter, filter2 ];
             }
             if ( $_GET[ "privkey"] ) {
