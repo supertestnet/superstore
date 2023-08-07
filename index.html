@@ -723,8 +723,6 @@
                 }
                 // console.log('content:', content);
                 if ( kind === 12196 ) {
-                    var now = Math.floor( Date.now() / 1000 );
-                    if ( 1692037331 - now > 0 ) $( '.dropper' ).style.display = "none";
                     if ( !isValidJson( content ) ) return;
                     if ( event.created_at <= store_id[ 1 ] ) return;
                     if ( event.id == store_id[ 0 ] ) return;
@@ -751,6 +749,8 @@
                     if ( "store_name" in content ) {
                         if ( $( '.store_name' ) ) $( '.store_name' ).value = content[ "store_name" ];
                         title.setState( () => title.name = content[ "store_name" ] );
+                        var now = Math.floor( Date.now() / 1000 );
+                        if ( 1692037331 - now > 0 ) $( '.dropper' ).style.display = "none";
                     }
                     $( '.title' ).style.display = "flex";
                     if ( $_GET[ "pubkey" ] ) $( '.view_store' ).style.display = "block";
