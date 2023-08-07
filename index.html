@@ -439,6 +439,14 @@
             }
             return true;
         }
+        function isValidAddress( address ) {
+            if ( $_GET[ "network" ] == "testnet" ) var network = bitcoinjs.networks.testnet; else var network = bitcoinjs.networks.mainnet;
+            try{
+                return ( typeof( bitcoinjs.address.toOutputScript( address, network ) ) == "object" );
+            } catch( e ) {
+                return;
+            }
+        }
 
         function add2Pubkeys( pubkey1, pubkey2 ) {
             return nobleSecp256k1.Point.fromHex( pubkey1 ).add( nobleSecp256k1.Point.fromHex( pubkey2 ) ).toHex();
@@ -1728,7 +1736,7 @@
                         });
                     }
                     var destino = prompt( "Enter the bitcoin address where you want your sats to go" );
-                    if ( !destino ) {
+                    if ( !destino || !isValidAddress( destino ) ) {
                         alert( "You entered an invalid bitcoin address. Please try again." );
                         return;
                     }
