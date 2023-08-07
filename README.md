@@ -41,7 +41,6 @@ Also make sure you withdraw your money from the store frequently. The site uses 
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
 
-- [ ] Educate merchants about resources like thebitcoincompany.com where they can use their earnings to buy visa gift cards -- e.g. merchants with a fiat webshop can load a visa card via bitcoin and unload it as usd in their regular shop, thus putting their bitcoin earnings into their regular workflow
 - [ ] Show buyers a measurement of merchant activity -- e.g. did the merchant check their store this week? Did they fulfill any orders this week?
 - [ ] Make a downloadable version with a rest api
 - [ ] Custom styling -- people like to make things look nice and feel like it's themed after their regular blog or website or whatever. Ok cool but visual flare isn't very important to me so maybe someone else can add code for that. Do a pull request!
@@ -75,3 +74,4 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [x] On a lightning payment's "Inspect transaction" link, instead of opening to lnbits, show a modal with instructions: "open lnbits, enter this in the searchbar"
 - [x] Add "loading..." to lightning invoice box in case the user clicks it before the invoice has actually loaded
 - [x] Custom ordering -- people have complained that the order in which products appear on their frontend does not match the order in which they appear on the backend, and they'd also like to be able to set them in a particular order without needing to copy/paste stuff between different boxes
+- [x] Educate merchants about resources like thebitcoincompany.com where they can use their earnings to buy visa gift cards -- e.g. merchants with a fiat webshop can load a visa card via bitcoin and unload it as usd in their regular shop, thus putting their bitcoin earnings into their regular workflow
