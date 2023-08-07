@@ -1212,7 +1212,8 @@
             if ( store_meta.shipment_ids.length == 1 ) order_or_orders = "order";
             if ( store_meta.checkin_ids.length == 1 ) time_or_times = "time";
             var message = `Store stats: this week, the store owner shipped ${store_meta.shipment_ids.length} ${order_or_orders}`;
-            if ( store_meta.checkin_ids.length ) message += ` and checked for new orders ${store_meta.checkin_ids.length} ${time_or_times}`;
+            var now = Math.floor( Date.now() / 1000 );
+            if ( 1692047296 - now < 0 && store_meta.checkin_ids.length ) message += ` and checked for new orders ${store_meta.checkin_ids.length} ${time_or_times}`;
             var div = document.createElement( "div" );
             div.innerHTML = `
               <p>${message}</p>
