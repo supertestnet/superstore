@@ -76,6 +76,7 @@
             border-radius: 50%;
             vertical-align: middle;
             background-size: cover;
+            background-position: center center;
         }
         .nostr_profile .nym {
             display: inline;
@@ -702,6 +703,7 @@
         var stores_auth_privkey = null;
         var stores_auth_pubkey;
         var waiting_for_auth = false;
+        var auth_sub = null;
         if ( localStorage[ "shipped_orders" ] ) var shipped_orders = JSON.parse( localStorage[ "shipped_orders" ] ); else var shipped_orders = [];
         sessionStorage.clear();
         var sales = [];
@@ -845,7 +847,7 @@
                         $( '.name_instructions' ).innerText = "Manage name";
                         $( '.product_instructions' ).innerText = "Manage products";
                         $( '.public_link' ).style.display = "inline";
-                        // $( '.connect_nostr' ).style.display = "inline";
+                        $( '.connect_nostr' ).style.display = "inline";
                         $( '.public_link' ).href = window.location.protocol + "//" + window.location.hostname + window.location.pathname + `?pubkey=${original_pubkey}&relays=${encodeURI( JSON.stringify( relays ) )}`;
                     }
                     products = [];
@@ -862,6 +864,7 @@
                         stores_auth_pubkey = getCompressedPubkeyHexFromPrivkeyHex( content[ "auth_privkey" ] ).substring( 2 );
                         var filter2 = { kinds: [ 4 ], "#p": [ stores_auth_pubkey ] }
                         subscription = [ "REQ", subId, filter, filter2 ];
+                        auth_sub = subscription;
                     }
                     if ( $_GET[ "privkey" ] ) {
                         $( '.product' ).children[ 0 ].value = "";
@@ -1352,12 +1355,12 @@
             <div class="manage_sales_toolbar"></div>
             <div style="display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center;">
                 <h2 class="name_instructions">Name your store</h2>
-                <a class="public_link" target="_blank"><button>View store</button></a>
+                <a class="connect_nostr" target="_blank"><button>Connect nostr</button></a>
             </div>
             <input class="store_name">
             <div style="display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center;">
                 <h2 class="product_instructions">Add products</h2>
-                <a class="connect_nostr" target="_blank"><button>Connect nostr</button></a>
+                <a class="public_link" target="_blank"><button>View store</button></a>
             </div>
             <div class="products_wrapper">
                 <div class="product">
@@ -1428,7 +1431,7 @@
             var last_shipment = store_meta.last_shipment ? new Date( store_meta.last_shipment * 1000 ).toLocaleDateString() : "never";
             var message = ``;
             var owner_pic = store_meta.owner_pic || "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg";
-            if ( store_meta.owner_nym ) message += `<div class="profile_label">&nbsp;&nbsp;Store owner</div><a href="https://nostr.band/${pubkeyToNpub( store_meta.owner_pub )}" target="_blank" class="nostr_profile"><div class="pic" style="background-image: url(${owner_pic})"></div><div class="nym">${store_meta.owner_nym}</div></a><br>`;
+            if ( store_meta.owner_nym ) message += `<div class="profile_label">&nbsp;&nbsp;Store owner</div><a href="https://nostr.band/${pubkeyToNpub( store_meta.owner_pub )}" target="_blank" class="nostr_profile"><div class="pic" style="background-image: url(${owner_pic});"></div><div class="nym">${store_meta.owner_nym}</div></a><br>`;
             message += `<span style="text-decoration: underline;">Magic stats</span><br>Lifetime purchases: ${store_meta.lifetime_orders.length}<br>Last purchase: ${last_purchase}<br>Last shipment: ${last_shipment}<br>Received this week: ${store_meta.recent_orders.length} ${order_or_orders_2}<br>Shipped this week: ${store_meta.shipment_ids.length} ${order_or_orders}`;
             var now = Math.floor( Date.now() / 1000 );
             if ( 1692047296 - now < 0 && store_meta.checkin_ids.length ) message += `<br>The owner also checked for new orders ${store_meta.checkin_ids.length} ${time_or_times} this week`;
@@ -1809,6 +1812,7 @@
             //function should run when I connect to a relay, otherwise the
             //ensureWalletIsAvailable function might not work, since it
             //sometimes has to send a message to a relay
+            if ( auth_sub ) this.send( JSON.stringify( auth_sub ) );
             if ( !$_GET[ "pubkey" ] && !$_GET[ "privkey" ] ) {
                 ensureWalletIsAvailable();
             } else {
@@ -1819,7 +1823,7 @@
             //users can see if the admin "checked in" on their store
             //recently
             if ( $_GET[ "privkey" ] && !signedCheckinEvent ) await make_checkin_event();
-            if ( $_GET[ "privkey" ] ) this.send(JSON.stringify([ "EVENT", signedCheckinEvent ]));
+            if ( $_GET[ "privkey" ] ) this.send( JSON.stringify( [ "EVENT", signedCheckinEvent ] ) );
         }
         var openConnections = async () => {
             var i; for ( i=0; i<relays.length; i++ ) {
@@ -2100,17 +2104,27 @@
         }
         $( '.connect_nostr' ).onclick = async () => {
             waiting_for_auth = true;
-            console.log( "waiting for auth:", waiting_for_auth );
-            var users_relay = prompt( "Please enter one of the relays you use with your regular nostr account" );
-            if ( !users_relay.startsWith( "wss://" ) ) return alert( "That is not a valid relay, please try again. And remember, the relay must start with wss://" );
-            var relay_list = `<ul>`;
+            var relay_list = `<ul style="background-color: tan; padding: 1rem;">`;
             Object.keys( relays_obj ).forEach( item => {
                 relay_list += `<li>${item}</li>`;
             });
             relay_list += `</ul>`;
             var auth_sig = await nobleSecp256k1.schnorr.sign( pubKey, privKey );
-            var attestation_text = hexToBase64( auth_sig ) + "|" + hexToBase64( textToHex( users_relay ) );
-            showModal( `<p>To authenticate your store with your regular nostr account, first ensure your regular nostr account is connected to one or more of these relays</p>${relay_list}<p>Next, send the following text as a DM from your nostr account</p><pre class="attestation_text">${attestation_text}</pre><p>Send it to the following pubkey</p><pre class="attestation_text">${pubkeyToNpub( auth_pubkey )}</pre>` );
+            showModal( `<p style="font-weight: bold;">Step 1. Let's find your profile.</p><p>Enter your regular nostr account's npub and a relay you use. We'll try to find your profile.</p><p><input class="auth_npub" placeholder="npub1..."></p><p><input class="auth_relay" placeholder="wss://..."></p><p><button class="submit_auth">Submit</button></p>` );
+            $( '.submit_auth' ).onclick = async () => {
+                var users_npub = $( '.auth_npub' ).value;
+                if ( !users_npub || !users_npub.startsWith( "npub1" ) ) return alert( "That is not a valid npub, please try again. And remember, the relay must start with npub1" );
+                var users_relay = $( '.auth_relay' ).value;
+                if ( !users_relay || !users_relay.startsWith( "wss://" ) ) return alert( "That is not a valid relay, please try again. And remember, the relay must start with wss://" );
+                var attestation_text = hexToBase64( auth_sig ) + "|" + hexToBase64( textToHex( users_relay ) );
+                showModal( `loading...` );
+                var profile = await getMeta( pubkeyFromNpub( users_npub ), users_relay );
+                if ( profile == "time is up" ) {
+                    modalVanish();
+                    return alert( "We could not load your profile at that relay. Please try again with a different relay." );
+                }
+                showModal( `<p>We found your profile!</p><p style="font-weight: bold;">Step 2. Connect your store's relays</p><p>Ensure your regular nostr account is connected to one or more of these relays</p>${relay_list}<p style="font-weight: bold;">Step 3. Get the proof of ownership</p><p>The following text contains a base64-encoded proof of ownership of this store. Copy it.</p><pre class="attestation_text">${attestation_text}</pre><p style="font-weight: bold;">Step 4. Full send</p>Send the proof to your store's npub as a DM from your regular nostr account. Consider using iris.to for this part. Use its search function to find the npub, then message it the proof.</p><pre class="attestation_text">${pubkeyToNpub( auth_pubkey )}</pre>` );
+            }
         }
     </script>
     <script>
