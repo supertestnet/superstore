@@ -9,6 +9,7 @@
     <script src="https://supertestnet.github.io/bitcoin-chess/js/qrcode.js"></script>
     <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
     <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
+    <script src="https://bundle.run/bech32@2.0.0"></script>
     <script src="https://bundle.run/buffer@6.0.3"></script>
     <style>
         * {
@@ -49,7 +50,7 @@
         .store_meta {
             border: 1px solid black;
             border-radius: 1rem;
-            margin-top: -100%;
+            margin-top: -220%;
             padding: 1rem;
             transition: margin-top 0.3s ease;
             overflow: hidden;
@@ -156,7 +157,7 @@
             justify-content: space-between;
             text-align: left;
         }
-        .public_link {
+        .public_link, .connect_nostr {
             display: none;
         }
         .store_name {
@@ -190,6 +191,11 @@
         }
         .products_wrapper {
             margin-top: 1.5rem;
+        }
+        .attestation_text {
+            white-space: pre-wrap;
+            background-color: tan;
+            padding: 1rem;
         }
 
         @media screen and (max-width: 600px) {
@@ -492,6 +498,24 @@
                 return;
             }
         }
+        var isValidUrl = urlString=> {
+            var urlPattern = new RegExp('^(https?:\\/\\/)?'+
+                '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+
+                '((\\d{1,3}\\.){3}\\d{1,3}))'+
+                '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+
+                '(\\?[;&a-z\[\\]\:\/\,\\d%_.~+=-]*)?'+
+                '(\\#[-a-z\\d_]*)?$','i');
+            return !!urlPattern.test( urlString );
+        }
+        function parseQuery( queryString ) {
+            var query = {};
+            var pairs = ( queryString[0] === '?' ? queryString.substr(1) : queryString ).split('&');
+            for ( var i=0; i<pairs.length; i++ ) {
+                var pair = pairs[i].split( '=' );
+                query[ decodeURIComponent( pair[0] ) ] = decodeURIComponent( pair[ 1 ] || '' );
+            }
+            return query;
+        }
 
         function add2Pubkeys( pubkey1, pubkey2 ) {
             return nobleSecp256k1.Point.fromHex( pubkey1 ).add( nobleSecp256k1.Point.fromHex( pubkey2 ) ).toHex();
@@ -658,6 +682,12 @@
             var balance = Number( Math.floor( winfo[ "balance" ] / 1000 ) );
             return balance;
         }
+        var hash50Times = ( hex, num=0 ) => {
+            hex = bitcoinjs.crypto.sha256( hexToBytes( hex ) ).toString( "hex" );
+            num = num + 1;
+            if ( num >= 50 ) return hex;
+            return hash50Times( hex, num );
+        }
     </script>
     <script>
         var store_id = [];
@@ -667,6 +697,9 @@
         var available_utxos = [];
         var ln_domain = null;
         var ln_readkey = null;
+        var stores_auth_privkey = null;
+        var stores_auth_pubkey;
+        var waiting_for_auth = false;
         if ( localStorage[ "shipped_orders" ] ) var shipped_orders = JSON.parse( localStorage[ "shipped_orders" ] ); else var shipped_orders = [];
         sessionStorage.clear();
         var sales = [];
@@ -678,6 +711,8 @@
         var pubKey  = getCompressedPubkeyHexFromPrivkeyHex( privKey );
         var original_pubkey = pubKey;
         pubKey      = pubKey.substring( 2 );
+        var auth_privkey = hash50Times( privKey );
+        var auth_pubkey = getCompressedPubkeyHexFromPrivkeyHex( auth_privkey ).substring( 2 );
         var signedCheckinEvent = null;
         var make_checkin_event = async () => {
             checkin_event = {
@@ -713,6 +748,7 @@
                             }
                             if ( !store_meta.recent_orders.includes( event.id ) && !( event.created_at < now - ( 3600 * 24 * 7 ) ) ) {
                                 store_meta.recent_orders.push( event.id );
+                                if ( !store_meta.lifetime_orders.includes( event.id ) ) store_meta.lifetime_orders.push( event.id );
                             }
                             if ( store_meta.lifetime_orders.includes( event.id ) || store_meta.recent_orders.includes( event.id ) ) return;
                             store_meta.lifetime_orders.push( event.id );
@@ -807,6 +843,7 @@
                         $( '.name_instructions' ).innerText = "Manage name";
                         $( '.product_instructions' ).innerText = "Manage products";
                         $( '.public_link' ).style.display = "inline";
+                        $( '.connect_nostr' ).style.display = "inline";
                         $( '.public_link' ).href = window.location.protocol + "//" + window.location.hostname + window.location.pathname + `?pubkey=${original_pubkey}&relays=${encodeURI( JSON.stringify( relays ) )}`;
                     }
                     products = [];
@@ -818,6 +855,12 @@
                     var subId   = ( "01" + bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ) ).substring( 0, 16 );
                     var filter  = { ids: array }
                     var subscription = [ "REQ", subId, filter ];
+                    if ( "auth_privkey" in content ) {
+                        stores_auth_privkey = content[ "auth_privkey" ];
+                        stores_auth_pubkey = getCompressedPubkeyHexFromPrivkeyHex( content[ "auth_privkey" ] ).substring( 2 );
+                        var filter2 = { kinds: [ 4 ], "#p": [ stores_auth_pubkey ] }
+                        subscription = [ "REQ", subId, filter, filter2 ];
+                    }
                     if ( $_GET[ "privkey" ] ) {
                         $( '.product' ).children[ 0 ].value = "";
                         $( '.product' ).children[ 1 ].value = "";
@@ -828,7 +871,6 @@
                     Object.keys( relays_obj ).forEach( function( relay ) {
                         relays_obj[ relay ].send( JSON.stringify( subscription ) );
                     });
-                    // socket.send(JSON.stringify( subscription ));
                 }
                 if ( type == "EOSE" ) {
                     if ( !$_GET[ "privkey" ] ) return;
@@ -861,6 +903,40 @@
                 }
             }
             if ( subId.startsWith( "01" ) ) {
+                if ( kind === 4 ) {
+                    var recipient = null;
+                    var i; for ( i=0; i<event.tags.length; i++ ) {
+                        if ( event.tags[ i ] && event.tags[ i ][ 1 ] ) {
+                            if ( event.tags[ i ][ 0 ] != "p" ) continue;
+                            recipient = event.tags[ i ][ 1 ];
+                            break;
+                        }
+                    }
+                    if ( recipient === stores_auth_pubkey ) {
+                        content = await decrypt( stores_auth_privkey, event.pubkey, content );
+                        var sig_part = content.substring( 0, content.indexOf( "|" ) );
+                        var rel_part = content.substring( content.indexOf( "|" ) + 1 );
+                        var sig = base64ToHex( sig_part );
+                        var users_relay = hexToText( base64ToHex( rel_part ) );
+                        //check if sender knows the store private key
+                        var pubkey = $_GET[ "pubkey" ] || original_pubkey;
+                        var sig_is_good = await nobleSecp256k1.schnorr.verify( sig, pubkey.substring( 2 ), pubkey.substring( 2 ) );
+                        if ( !sig_is_good ) return;
+                        var test = await getMeta( event.pubkey, users_relay );
+                        if ( !isValidJson( test ) ) return;
+                        store_meta.setState( () => {
+                            store_meta.owner_pub = event.pubkey;
+                            store_meta.owner_rel = users_relay;
+                            store_meta.owner_nym = JSON.parse( test )[ "name" ];
+                            store_meta.owner_pic = JSON.parse( test )[ "picture" ];
+                        });
+                    }
+                    if ( waiting_for_auth ) {
+                        modalVanish();
+                        waiting_for_auth = false;
+                        alert( "Success, your store is now authenticated with your regular nostr account" );
+                    }
+                }
                 if ( kind === 42196 ) {
                     var content = JSON.parse( content );
                     var is_seen = false;
@@ -1068,6 +1144,21 @@
             }
             return result;
         }
+        function hexToBase64(hex) {
+            return btoa( hex.match( /\w{2}/g ).map( a => {return String.fromCharCode( parseInt( a, 16 ) );} ).join( "" ) );
+        }
+        function hexToText( hex ) {
+            var bytes = new Uint8Array(Math.ceil(hex.length / 2));
+            for (var i = 0; i < hex.length; i++) bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+            var text = new TextDecoder().decode( bytes );
+            return text;
+        }
+        function textToHex( text ) {
+            var encoder = new TextEncoder().encode( text );
+            return [...new Uint8Array(encoder)]
+                .map( x => x.toString( 16 ).padStart( 2, "0" ) )
+                .join( "" );
+        }
         function encrypt( privkey, pubkey, text ) {
             var key = nobleSecp256k1.getSharedSecret( privkey, '02' + pubkey, true ).substring( 2 );
             var iv = window.crypto.getRandomValues(new Uint8Array(16));
@@ -1114,11 +1205,15 @@
             // get invoice: postData( "https://legend.lnbits.com/api/v1/payments", '{"out": false, "amount": 1000}', content_type = "application/json", apikey = "6eafd20149f6491baa61166faba0d9dc" );
             //check invoice: getData( "https://legend.lnbits.com/api/v1/payments/a89f4279b098fa4e6254798619902f3a1bfb3adeabe4006284d842075442d1bf", "application/json", "6eafd20149f6491baa61166faba0d9dc" );
         }
-        async function getNostrNote( id ) {
+        async function getNostrNote( id, relay ) {
             var started_waiting_time = Math.floor( Date.now() / 1000 );
             var note = "";
             var rand = Math.floor( Math.random() * Object.keys( relays_obj ).length );
-            var socket = relays_obj[ Object.keys( relays_obj )[ rand ] ];
+            if ( !relay ) {
+                var socket = relays_obj[ Object.keys( relays_obj )[ rand ] ];
+            } else {
+                var socket = new WebSocket( relay );
+            }
             socket.addEventListener( 'message', async function( event ) {
                 var event = JSON.parse( event.data );
                 console.log( `got an event from this relay: ${Object.keys( relays_obj )[ rand ]}`, event );
@@ -1134,13 +1229,67 @@
                     event[ 2 ]['content']       // Your note contents
                 ]);
                 var id  = sha256( eventData ).toString( 'hex' );
-                var pubKeyPlusOne = ( BigInt( "0x" + pubKey ) + BigInt( "0x" + pubKey ) ).toString( 16 ).substring( 0, 64 );
+                var valid = await nobleSecp256k1.schnorr.verify( sig, id, event[ 2 ].pubkey );
+                if ( valid && !relay ) note = event[ 2 ].content;
+                if ( valid && relay ) note = JSON.stringify([event[ 2 ].content, event[ 2 ].pubkey, event[ 2 ].id, relay]);
+            });
+            socket.addEventListener( 'open', function open() {
+                var randomid = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
+                var filter = {"ids": [ id ]}
+                var subscription = [ "REQ", randomid, filter ];
+                subscription = JSON.stringify( subscription );
+                var chaser = [ "CLOSE", randomid ];
+                chaser = JSON.stringify( chaser );
+                socket.send( subscription );
+                setTimeout( function() {socket.send( chaser );}, 1000 );
+                setTimeout( function() {socket.close();}, 2000 );
+            });
+            async function isNoteSetYet( note_i_seek ) {
+                return new Promise( function( resolve, reject ) {
+                    if ( !note_i_seek ) {
+                        var current_time = Math.floor( Date.now() / 1000 );
+                        if ( started_waiting_time + 5 < current_time ) {
+                            resolve( "time is up" );
+                        }
+                        setTimeout( async function() {
+                            var msg = await isNoteSetYet( note );
+                            resolve( msg );
+                        }, 100 );
+                    } else {
+                        resolve( note_i_seek );
+                    }
+                });
+            }
+            async function getTimeoutData() {
+                var note_i_seek = await isNoteSetYet( note );
+                return note_i_seek;
+            }
+            var returnable = await getTimeoutData();
+            return returnable;
+        }
+        async function getMeta( pubkey, relay ) {
+            var started_waiting_time = Math.floor( Date.now() / 1000 );
+            var note = "";
+            var socket = new WebSocket( relay );
+            socket.addEventListener( 'message', async function( event ) {
+                var event = JSON.parse( event.data );
+                if ( !event[ 2 ] || event[ 2 ] === true || event[ 2 ] === false ) return;
+                var sig = event[ 2 ].sig;
+                var eventData = JSON.stringify([
+                    0,                  // Reserved for future use
+                    event[ 2 ]['pubkey'],       // The sender's public key
+                    event[ 2 ]['created_at'],   // Unix timestamp
+                    event[ 2 ]['kind'],     // Message “kind” or type
+                    event[ 2 ]['tags'],     // Tags identify replies/recipients
+                    event[ 2 ]['content']       // Your note contents
+                ]);
+                var id  = sha256( eventData ).toString( 'hex' );
                 var valid = await nobleSecp256k1.schnorr.verify( sig, id, event[ 2 ].pubkey );
                 if ( valid ) note = event[ 2 ].content;
             });
             socket.addEventListener( 'open', function open() {
                 var randomid = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
-                var filter = {"ids": [ id ]}
+                var filter = {"kinds": [ 0 ], "authors": [ pubkey ], "limit": 1}
                 var subscription = [ "REQ", randomid, filter ];
                 subscription = JSON.stringify( subscription );
                 var chaser = [ "CLOSE", randomid ];
@@ -1184,6 +1333,12 @@
             var was_seen = await eventWasReplayedTilSeen( event );
             return was_seen;
         }
+        function pubkeyFromNpub( npub ) {
+            return bytesToHex( bech32.bech32.fromWords( bech32.bech32.decode( npub ).words ) );
+        }
+        function pubkeyToNpub( hex ) {
+            return bech32.bech32.encode( "npub", bech32.bech32.toWords( hexToBytes( hex, "hex" ) ) );
+        }
     </script>
 </head>
 <body>
@@ -1195,12 +1350,12 @@
             <div class="manage_sales_toolbar"></div>
             <div style="display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center;">
                 <h2 class="name_instructions">Name your store</h2>
-                <a class="public_link" target="_blank"><button>View store</button></a>
+                <a class="connect_nostr" target="_blank"><button>Connect nostr</button></a>
             </div>
             <input class="store_name">
             <div style="display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center;">
                 <h2 class="product_instructions">Add products</h2>
-                <a class="connect_nostr" target="_blank" style="display: none;"><button>Connect nostr</button></a>
+                <a class="public_link" target="_blank"><button>View store</button></a>
             </div>
             <div class="products_wrapper">
                 <div class="product">
@@ -1254,7 +1409,7 @@
             $( '.dropper' ).style.transform = `rotate(180deg)`;
         }
         var hideMeta = () => {
-            $( '.store_meta' ).style.marginTop = "-100%";            
+            $( '.store_meta' ).style.marginTop = "-220%";
             $( '.dropper' ).removeEventListener( "click", hideMeta );
             $( '.dropper' ).addEventListener( "click", showMeta );
             $( '.dropper' ).style.transform = `rotate(0deg)`;
@@ -1273,9 +1428,8 @@
             var owner_pic = store_meta.owner_pic || "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg";
             if ( store_meta.owner_nym ) message += `<div class="profile_label">&nbsp;&nbsp;Store owner</div><div class="nostr_profile"><div class="pic" style="background-image: url(${owner_pic})"></div><div class="nym">${store_meta.owner_nym}</div></div><br>`;
             message += `<span style="text-decoration: underline;">Magic stats</span><br>Lifetime purchases: ${store_meta.lifetime_orders.length}<br>Last purchase: ${last_purchase}<br>Last shipment: ${last_shipment}<br>Received this week: ${store_meta.recent_orders.length} ${order_or_orders_2}<br>Shipped this week: ${store_meta.shipment_ids.length} ${order_or_orders}`;
-            //Last shipment: ${last_shipment}<br>
             var now = Math.floor( Date.now() / 1000 );
-            if ( 1692047296 - now < 0 && store_meta.checkin_ids.length ) message += `<br>The store owner also checked for new orders ${store_meta.checkin_ids.length} ${time_or_times}.`;
+            if ( 1692047296 - now < 0 && store_meta.checkin_ids.length ) message += `<br>The owner also checked for new orders ${store_meta.checkin_ids.length} ${time_or_times} this week`;
             return message;
           },
           checkin_ids: [],
@@ -1285,6 +1439,7 @@
           last_shipment: 0,
           lifetime_orders: [],
           owner_pub: "",
+          owner_rel: [],
           owner_nym: "",
           owner_pic: "",
           setState: (callback) => {
@@ -1398,6 +1553,7 @@
             store_info[ "lnbits_public" ] = {domain, readkey}
             store_info[ "lnbits_secret" ] = encrypt( privKey, pubKey, localStorage[ "wallet_info" ] );
             store_info[ "store_name" ] = $( '.title' ).innerText;
+            store_info[ "auth_privkey" ] = auth_privkey;
             var event = {
                 "content"    : JSON.stringify( store_info ),
                 "created_at" : Math.floor( Date.now() / 1000 ),
@@ -1615,7 +1771,7 @@
             console.log( "connected to " + this.url );
             var subId   = ( "00" + bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ) ).substring( 0, 16 );
             if ( $_GET[ "pubkey"] ) {
-                var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196 ] }
+                var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196, 42199 ] }
                 var filter2 = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 42198 ], since: Math.floor( Date.now() / 1000 ) - 604800 }
                 var filter3 = { "#p": [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 4 ] }
                 var filter4 = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 42197 ] }
@@ -1940,11 +2096,19 @@
             }
             $( '.manage_sales_btn' ).onclick = manageSales;
         }
-        $( '.connect_nostr' ).onclick = () => {
-            store_meta.setState( () => {
-                store_meta.owner_nym = "Super Testnet";
-                store_meta.owner_pic = "https://media.istockphoto.com/id/464988959/photo/mallard-duck-on-white-background.jpg?s=612x612&w=0&k=20&c=S1jcDuyXuoCVUaTobTrZ5f6SlscukkyheqKDHAeflW8=";
+        $( '.connect_nostr' ).onclick = async () => {
+            waiting_for_auth = true;
+            console.log( "waiting for auth:", waiting_for_auth );
+            var users_relay = prompt( "Please enter one of the relays you use with your regular nostr account" );
+            if ( !users_relay.startsWith( "wss://" ) ) return alert( "That is not a valid relay, please try again. And remember, the relay must start with wss://" );
+            var relay_list = `<ul>`;
+            Object.keys( relays_obj ).forEach( item => {
+                relay_list += `<li>${item}</li>`;
             });
+            relay_list += `</ul>`;
+            var auth_sig = await nobleSecp256k1.schnorr.sign( pubKey, privKey );
+            var attestation_text = hexToBase64( auth_sig ) + "|" + hexToBase64( textToHex( users_relay ) );
+            showModal( `<p>To authenticate your store with your regular nostr account, first ensure your regular nostr account is connected to one or more of these relays</p>${relay_list}<p>Next, send the following text as a DM from your nostr account</p><pre class="attestation_text">${attestation_text}</pre><p>Send it to the following pubkey</p><pre class="attestation_text">${pubkeyToNpub( auth_pubkey )}</pre>` );
         }
     </script>
     <script>
