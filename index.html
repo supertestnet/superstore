@@ -37,16 +37,46 @@
             border: 1px solid grey;
             margin-bottom: 1rem;
         }
-        .make_store, .store_meta {
+        .make_store {
             display: none;
         }
         .make_store, .view_store, .store_meta {
             margin-top: 1rem;
         }
+        .meta_wrapper {
+            overflow: hidden;
+        }
         .store_meta {
             border: 1px solid black;
             border-radius: 1rem;
-            padding: 0 1rem;
+            margin-top: -100%;
+            padding: 1rem;
+            transition: margin-top 0.3s ease;
+            overflow: hidden;
+        }
+        .profile_label {
+            margin-bottom: 0.5rem;
+        }
+        .nostr_profile {
+            display: inline-block;
+            padding: 0.5rem;
+            border: 1px solid black;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+        }
+        .nostr_profile .pic {
+            display: inline-block;
+            margin-right: 0.5rem;
+            width: 3rem;
+            height: 3rem;
+            border: 1px solid black;
+            border-radius: 50%;
+            vertical-align: middle;
+            background-size: cover;
+        }
+        .nostr_profile .nym {
+            display: inline;
+            vertical-align: middle;
         }
         .product {
             border: 1px solid black;
@@ -156,7 +186,10 @@
             transition: opacity 0.5s, bottom 0.5s;
         }
         .dropper {
-            transition: transform 0.3s;
+            transition: transform 0.3s ease;
+        }
+        .products_wrapper {
+            margin-top: 1.5rem;
         }
 
         @media screen and (max-width: 600px) {
@@ -204,7 +237,7 @@
         function makeSmallPrivkey() {
             var privkey = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" );
             if ( privkey.substring( 0, 1 ) != "0" || privkey.substring( 1, 2 ) != "0" ) {
-                    return makeSmallPrivkey();
+                return makeSmallPrivkey();
             }
             return privkey;
         }
@@ -656,7 +689,6 @@
             }
             signedCheckinEvent = await getSignedEvent(checkin_event, privKey);
         }
-        if ( $_GET[ "privkey" ] ) make_checkin_event();
         // console.log( pubKey );
         if ( $_GET[ "relay" ] ) var relay = $_GET[ "relay" ]; else var relay = "wss://nostrue.com";
         if ( $_GET[ "relays" ] ) {
@@ -674,8 +706,14 @@
             if ( subId.startsWith( "00" ) ) {
                 if ( kind === 4 ) {
                     if ( $_GET[ "pubkey" ] ) {
+                        var now = Math.floor( Date.now() / 1000 );
                         store_meta.setState( () => {
+                            if ( event.created_at > store_meta.last_purchase ) {
+                                store_meta.last_purchase = event.created_at;
+                            }
                             if ( store_meta.order_ids.includes( event.id ) ) return;
+                            store_meta.lifetime_purchases = store_meta.lifetime_purchases + 1;
+                            if ( event.created_at < now - ( 3600 * 24 * 7 ) ) return;
                             store_meta.order_ids.push( event.id );
                         });
                     } else {
@@ -803,8 +841,13 @@
                     }
                 }
                 if ( kind === 42197 && $_GET[ "pubkey" ] ) {
+                    var now = Math.floor( Date.now() / 1000 );
                     store_meta.setState( () => {
+                        if ( event.created_at > store_meta.last_shipment ) {
+                            store_meta.last_shipment = event.created_at;
+                        }
                         if ( store_meta.shipment_ids.includes( event.id ) ) return;
+                        if ( event.created_at < now - ( 3600 * 24 * 7 ) ) return;
                         store_meta.shipment_ids.push( event.id );
                     });                    
                 }
@@ -1144,7 +1187,7 @@
 </head>
 <body>
     <div class="title_wrapper"><div class="title"></div></div>
-    <div class="store_meta"></div>
+    <div class="meta_wrapper"><div class="store_meta"></div></div>
     <div class="splash_screen">Loading...</div>
     <div class="make_store">
         <div class="products">
@@ -1154,7 +1197,10 @@
                 <a class="public_link" target="_blank"><button>View store</button></a>
             </div>
             <input class="store_name">
-            <h2 class="product_instructions">Add products</h2>
+            <div style="display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center;">
+                <h2 class="product_instructions">Add products</h2>
+                <a class="connect_nostr" target="_blank" style="display: none;"><button>Connect nostr</button></a>
+            </div>
             <div class="products_wrapper">
                 <div class="product">
                     <input placeholder="product name"><input placeholder="image url"><textarea placeholder="description" class="desc"></textarea><select placeholder="shipping zone"><option>--- Shipping zone ---</option><option>Free (digital)</option><option>Worldwide</option><option>Europe</option><option>Australia</option><option>Austria</option><option>Belgium</option><option>Brazil</option><option>Canada</option><option>Denmark</option><option>Finland</option><option>France</option><option>Germany</option><option>Greece</option><option>Hong Kong</option><option>Hungary</option><option>Ireland</option><option>Indonesia</option><option>Israel</option><option>Italy</option><option>Japan</option><option>Kazakhstan</option><option>Korea</option><option>Luxembourg</option><option>Malaysia</option><option>Mexico</option><option>Netherlands</option><option>New Zealand</option><option>Norway</option><option>Poland</option><option>Portugal</option><option>Russia</option><option>Saudi Arabia</option><option>Singapore</option><option>Spain</option><option>Sweden</option><option>Switzerland</option><option>Thailand</option><option>Turkey</option><option>Ukraine</option><option>United Kingdom</option><option>United States</option><option>Vietnam</option><option>China</option></select><input placeholder="usd price (e.g. 5.99)" class="price" type="number" step="0.01" min="0"><div style="margin-bottom: 1rem;"><input type="checkbox" style="width: 1rem;vertical-align: middle;margin-bottom: auto;" id="no_price_0"><label for="no_price_0" style="display: inline;vertical-align: middle;">Let users set the price</label></div><button class="preview">Product preview</button><button class="plus_and_minus">Add another product</button>
@@ -1201,13 +1247,13 @@
         };
         title.render();
         var showMeta = () => {
-            $( '.store_meta' ).style.display = "block";
+            $( '.store_meta' ).style.marginTop = "1rem";            
             $( '.dropper' ).removeEventListener( "click", showMeta );
             $( '.dropper' ).addEventListener( "click", hideMeta );
             $( '.dropper' ).style.transform = `rotate(180deg)`;
         }
         var hideMeta = () => {
-            $( '.store_meta' ).style.display = "none";
+            $( '.store_meta' ).style.marginTop = "-100%";            
             $( '.dropper' ).removeEventListener( "click", hideMeta );
             $( '.dropper' ).addEventListener( "click", showMeta );
             $( '.dropper' ).style.transform = `rotate(0deg)`;
@@ -1220,25 +1266,33 @@
             if ( store_meta.shipment_ids.length == 1 ) order_or_orders = "order";
             if ( store_meta.checkin_ids.length == 1 ) time_or_times = "time";
             if ( store_meta.order_ids.length == 1 ) order_or_orders_2 = "order";
-            var message = `Store stats: this week, this store received ${store_meta.order_ids.length} ${order_or_orders_2} and shipped out ${store_meta.shipment_ids.length} ${order_or_orders}.`;
+            var last_purchase = store_meta.last_purchase ? new Date( store_meta.last_purchase * 1000 ).toLocaleDateString() : "never";
+            var last_shipment = store_meta.last_shipment ? new Date( store_meta.last_shipment * 1000 ).toLocaleDateString() : "never";
+            var message = ``;
+            var owner_pic = store_meta.owner_pic || "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg";
+            if ( store_meta.owner_nym ) message += `<div class="profile_label">&nbsp;&nbsp;Store owner</div><div class="nostr_profile"><div class="pic" style="background-image: url(${owner_pic})"></div><div class="nym">${store_meta.owner_nym}</div></div><br>`;
+            message += `<span style="text-decoration: underline;">Store stats</span><br>Lifetime purchases: ${store_meta.lifetime_purchases}<br>Last purchase: ${last_purchase}<br>Last shipment: ${last_shipment}<br>Received this week: ${store_meta.order_ids.length} ${order_or_orders_2}<br>Shipped this week: ${store_meta.shipment_ids.length} ${order_or_orders}`;
+            //Last shipment: ${last_shipment}<br>
             var now = Math.floor( Date.now() / 1000 );
-            if ( 1692047296 - now < 0 && store_meta.checkin_ids.length ) message += ` Its owner also checked for new orders ${store_meta.checkin_ids.length} ${time_or_times}.`;
-            var div = document.createElement( "div" );
-            div.innerHTML = `
-              <p>${message}</p>
-            `;
-            return div.firstElementChild;
+            if ( 1692047296 - now < 0 && store_meta.checkin_ids.length ) message += `<br>The store owner also checked for new orders ${store_meta.checkin_ids.length} ${time_or_times}.`;
+            return message;
           },
           checkin_ids: [],
           shipment_ids: [],
           order_ids: [],
+          last_purchase: 0,
+          last_shipment: 0,
+          lifetime_purchases: 0,
+          owner_pub: "",
+          owner_nym: "",
+          owner_pic: "",
           setState: (callback) => {
             callback();
             store_meta.render();
           },
           render: () => {
             $( '.store_meta' ).innerHTML = ``;
-            $( '.store_meta' ).append( store_meta.html() );
+            $( '.store_meta' ).innerHTML = store_meta.html();
           }
         };
         store_meta.render();
@@ -1561,9 +1615,10 @@
             var subId   = ( "00" + bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ) ).substring( 0, 16 );
             if ( $_GET[ "pubkey"] ) {
                 var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196 ] }
-                var filter2 = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 42197, 42198 ], since: Math.floor( Date.now() / 1000 ) - 604800 }
-                var filter3 = { "#p": [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 4 ], since: Math.floor( Date.now() / 1000 ) - 604800 }
-                var subscription = [ "REQ", subId, filter, filter2, filter3 ];
+                var filter2 = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 42198 ], since: Math.floor( Date.now() / 1000 ) - 604800 }
+                var filter3 = { "#p": [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 4 ] }
+                var filter4 = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 42197 ] }
+                var subscription = [ "REQ", subId, filter, filter2, filter3, filter4 ];
             }
             if ( $_GET[ "privkey"] ) {
                 var filter  = { "#p": [ pubKey ], kinds: [ 4 ] }
@@ -1604,11 +1659,8 @@
             //if the user is the admin, fire off a message so that
             //users can see if the admin "checked in" on their store
             //recently
-            if ( $_GET[ "privkey" ] ) {
-                Object.keys( relays_obj ).forEach( function( relay ) {
-                    relays_obj[ relay ].send(JSON.stringify([ "EVENT", signedCheckinEvent ]));
-                });
-            }
+            if ( $_GET[ "privkey" ] && !signedCheckinEvent ) await make_checkin_event();
+            if ( $_GET[ "privkey" ] ) this.send(JSON.stringify([ "EVENT", signedCheckinEvent ]));
         }
         var openConnections = async () => {
             var i; for ( i=0; i<relays.length; i++ ) {
@@ -1797,7 +1849,7 @@
                     if ( sale[ 3 ] ) paid_amount = ( total / 100 ).toFixed( 2 );
                     var delivery_info = (sale[ 0 ][ "shipping_info" ]) ? sale[ 0 ][ "shipping_info" ]:sale[ 0 ][ "edelivery_info" ];
                     var order = `
-                        <div class="minicart order" style="background-color: ${bgcolor};" data-order_id="${sale[ 2 ]}"><div class="order_box">Delivery info:<br><div class="delivery_info"></div></div><div class="payment_info" style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );var order_id = this.parentElement.parentElement.getAttribute( 'data-order_id' );labelAsShipped( order_id );">${shipped_instructions}</button></div></div>
+                        <div class="minicart order" style="background-color: ${bgcolor};" data-order_id="${sale[ 2 ]}"><div class="order_box">Delivery info:<br><div class="delivery_info"></div></div><div class="payment_info" style="text-align: right;align-self: center;">They paid: $${paid_amount} <button class="order_details" onclick="if ( this.parentElement.parentElement.nextElementSibling.style.display != 'none' ) this.parentElement.parentElement.nextElementSibling.style.display = 'none'; else this.parentElement.parentElement.nextElementSibling.style.display = 'block';">details</button> <button class="click_when_shipped" onclick="if ( sales[ ${index} ][ 3 ] ) return;var conf = confirm( 'Are you sure you want to mark this order as shipped?' );if ( !conf ) return;this.parentElement.parentElement.style.backgroundColor = 'lightgreen';this.innerText = 'shipped';this.onclick = () => {return false};sales[ ${index} ][ 3 ] = 1;$( '.sales_count' ).innerText = Number( $( '.sales_count' ).innerText ) - 1;shipped_orders.push( sales[ ${index} ][ 2 ] );localStorage.shipped_orders = JSON.stringify( shipped_orders );labelAsShipped( this.parentElement.parentElement.getAttribute( 'data-order_id' ) );">${shipped_instructions}</button></div></div>
                     `;
                     if ( !txinfo[ 3 ] ) {
                         order += `
@@ -1886,6 +1938,12 @@
                 }
             }
             $( '.manage_sales_btn' ).onclick = manageSales;
+        }
+        $( '.connect_nostr' ).onclick = () => {
+            store_meta.setState( () => {
+                store_meta.owner_nym = "Super Testnet";
+                store_meta.owner_pic = "https://media.istockphoto.com/id/464988959/photo/mallard-duck-on-white-background.jpg?s=612x612&w=0&k=20&c=S1jcDuyXuoCVUaTobTrZ5f6SlscukkyheqKDHAeflW8=";
+            });
         }
     </script>
     <script>
