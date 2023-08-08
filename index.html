@@ -711,10 +711,11 @@
                             if ( event.created_at > store_meta.last_purchase ) {
                                 store_meta.last_purchase = event.created_at;
                             }
-                            if ( store_meta.order_ids.includes( event.id ) ) return;
-                            store_meta.lifetime_purchases = store_meta.lifetime_purchases + 1;
-                            if ( event.created_at < now - ( 3600 * 24 * 7 ) ) return;
-                            store_meta.order_ids.push( event.id );
+                            if ( !store_meta.recent_orders.includes( event.id ) && !( event.created_at < now - ( 3600 * 24 * 7 ) ) ) {
+                                store_meta.recent_orders.push( event.id );
+                            }
+                            if ( store_meta.lifetime_orders.includes( event.id ) || store_meta.recent_orders.includes( event.id ) ) return;
+                            store_meta.lifetime_orders.push( event.id );
                         });
                     } else {
                         var is_seen = false;
@@ -1265,13 +1266,13 @@
             var order_or_orders_2 = "orders";
             if ( store_meta.shipment_ids.length == 1 ) order_or_orders = "order";
             if ( store_meta.checkin_ids.length == 1 ) time_or_times = "time";
-            if ( store_meta.order_ids.length == 1 ) order_or_orders_2 = "order";
+            if ( store_meta.recent_orders.length == 1 ) order_or_orders_2 = "order";
             var last_purchase = store_meta.last_purchase ? new Date( store_meta.last_purchase * 1000 ).toLocaleDateString() : "never";
             var last_shipment = store_meta.last_shipment ? new Date( store_meta.last_shipment * 1000 ).toLocaleDateString() : "never";
             var message = ``;
             var owner_pic = store_meta.owner_pic || "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg";
             if ( store_meta.owner_nym ) message += `<div class="profile_label">&nbsp;&nbsp;Store owner</div><div class="nostr_profile"><div class="pic" style="background-image: url(${owner_pic})"></div><div class="nym">${store_meta.owner_nym}</div></div><br>`;
-            message += `<span style="text-decoration: underline;">Store stats</span><br>Lifetime purchases: ${store_meta.lifetime_purchases}<br>Last purchase: ${last_purchase}<br>Last shipment: ${last_shipment}<br>Received this week: ${store_meta.order_ids.length} ${order_or_orders_2}<br>Shipped this week: ${store_meta.shipment_ids.length} ${order_or_orders}`;
+            message += `<span style="text-decoration: underline;">Magic stats</span><br>Lifetime purchases: ${store_meta.lifetime_orders.length}<br>Last purchase: ${last_purchase}<br>Last shipment: ${last_shipment}<br>Received this week: ${store_meta.recent_orders.length} ${order_or_orders_2}<br>Shipped this week: ${store_meta.shipment_ids.length} ${order_or_orders}`;
             //Last shipment: ${last_shipment}<br>
             var now = Math.floor( Date.now() / 1000 );
             if ( 1692047296 - now < 0 && store_meta.checkin_ids.length ) message += `<br>The store owner also checked for new orders ${store_meta.checkin_ids.length} ${time_or_times}.`;
@@ -1279,10 +1280,10 @@
           },
           checkin_ids: [],
           shipment_ids: [],
-          order_ids: [],
+          recent_orders: [],
           last_purchase: 0,
           last_shipment: 0,
-          lifetime_purchases: 0,
+          lifetime_orders: [],
           owner_pub: "",
           owner_nym: "",
           owner_pic: "",
