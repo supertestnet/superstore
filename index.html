@@ -845,7 +845,7 @@
                         $( '.name_instructions' ).innerText = "Manage name";
                         $( '.product_instructions' ).innerText = "Manage products";
                         $( '.public_link' ).style.display = "inline";
-                        $( '.connect_nostr' ).style.display = "inline";
+                        // $( '.connect_nostr' ).style.display = "inline";
                         $( '.public_link' ).href = window.location.protocol + "//" + window.location.hostname + window.location.pathname + `?pubkey=${original_pubkey}&relays=${encodeURI( JSON.stringify( relays ) )}`;
                     }
                     products = [];
@@ -1352,12 +1352,12 @@
             <div class="manage_sales_toolbar"></div>
             <div style="display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center;">
                 <h2 class="name_instructions">Name your store</h2>
-                <a class="connect_nostr" target="_blank"><button>Connect nostr</button></a>
+                <a class="public_link" target="_blank"><button>View store</button></a>
             </div>
             <input class="store_name">
             <div style="display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center;">
                 <h2 class="product_instructions">Add products</h2>
-                <a class="public_link" target="_blank"><button>View store</button></a>
+                <a class="connect_nostr" target="_blank"><button>Connect nostr</button></a>
             </div>
             <div class="products_wrapper">
                 <div class="product">
