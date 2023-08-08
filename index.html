@@ -1427,7 +1427,7 @@
             var last_shipment = store_meta.last_shipment ? new Date( store_meta.last_shipment * 1000 ).toLocaleDateString() : "never";
             var message = ``;
             var owner_pic = store_meta.owner_pic || "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg";
-            if ( store_meta.owner_nym ) message += `<div class="profile_label">&nbsp;&nbsp;Store owner</div><a href="https://nostr.band/${pubkeyToNpub( store_meta.owner_pub )}" class="nostr_profile"><div class="pic" style="background-image: url(${owner_pic})"></div><div class="nym">${store_meta.owner_nym}</div></a><br>`;
+            if ( store_meta.owner_nym ) message += `<div class="profile_label">&nbsp;&nbsp;Store owner</div><a href="https://nostr.band/${pubkeyToNpub( store_meta.owner_pub )}" target="_blank" class="nostr_profile"><div class="pic" style="background-image: url(${owner_pic})"></div><div class="nym">${store_meta.owner_nym}</div></a><br>`;
             message += `<span style="text-decoration: underline;">Magic stats</span><br>Lifetime purchases: ${store_meta.lifetime_orders.length}<br>Last purchase: ${last_purchase}<br>Last shipment: ${last_shipment}<br>Received this week: ${store_meta.recent_orders.length} ${order_or_orders_2}<br>Shipped this week: ${store_meta.shipment_ids.length} ${order_or_orders}`;
             var now = Math.floor( Date.now() / 1000 );
             if ( 1692047296 - now < 0 && store_meta.checkin_ids.length ) message += `<br>The owner also checked for new orders ${store_meta.checkin_ids.length} ${time_or_times} this week`;
