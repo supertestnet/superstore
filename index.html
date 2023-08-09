@@ -1221,7 +1221,9 @@
             }
             socket.addEventListener( 'message', async function( event ) {
                 var event = JSON.parse( event.data );
-                console.log( `got an event from this relay: ${Object.keys( relays_obj )[ rand ]}`, event );
+                var myrelay = relay;
+                if ( !myrelay ) myrelay = Object.keys( relays_obj )[ rand ];
+                console.log( `got an event from this relay: ${myrelay}`, event );
                 if ( event[ 3 ] && ( event[ 3 ].includes( "have this event" ) || event[ 3 ].includes( "duplicate: exists" ) ) ) note = "relay has event";
                 if ( !event[ 2 ] || event[ 2 ] === true || event[ 2 ] === false ) return;
                 var sig = event[ 2 ].sig;
@@ -1326,16 +1328,27 @@
             var returnable = await getTimeoutData();
             return returnable;
         }
-        var eventWasReplayedTilSeen = async event => {
-            var note = await getNostrNote( event.id );
+        var eventWasReplayedTilSeen = async ( event, the_relay ) => {
+            if ( the_relay ) {
+                var note = await getNostrNote( event.id, the_relay );
+            } else {
+                var note = await getNostrNote( event.id );
+            }
             if ( note != "time is up" ) return true;
             console.log( "replaying..." );
-            Object.keys( relays_obj ).forEach( function( relay ) {
-                try {
-                    relays_obj[ relay ].send(JSON.stringify([ "EVENT", event ]));
-                } catch ( e ) {}
-            });
-            var was_seen = await eventWasReplayedTilSeen( event );
+            if ( the_relay ) {
+                var socket = new WebSocket( the_relay );
+                socket.addEventListener( "open", () => {
+                    socket.send(JSON.stringify([ "EVENT", event ]));
+                });
+            } else {
+                Object.keys( relays_obj ).forEach( function( relay ) {
+                    try {
+                        relays_obj[ relay ].send(JSON.stringify([ "EVENT", event ]));
+                    } catch ( e ) {}
+                });
+            }
+            var was_seen = await eventWasReplayedTilSeen( event, the_relay );
             return was_seen;
         }
         function pubkeyFromNpub( npub ) {
@@ -2110,20 +2123,51 @@
             });
             relay_list += `</ul>`;
             var auth_sig = await nobleSecp256k1.schnorr.sign( pubKey, privKey );
-            showModal( `<p style="font-weight: bold;">Step 1. Let's find your profile.</p><p>Enter your regular nostr account's npub and a relay you use. We'll try to find your profile.</p><p><input class="auth_npub" placeholder="npub1..."></p><p><input class="auth_relay" placeholder="wss://..."></p><p><button class="submit_auth">Submit</button></p>` );
+            showModal( `<p style="font-weight: bold;">Step 1 of 4. Let's find your profile</p><p>Enter your regular nostr account's npub and a relay you use. We'll try to find your profile.</p><p><input class="auth_npub" placeholder="npub1..."></p><p><input class="auth_relay" placeholder="wss://..."></p><p><button class="submit_auth">Submit</button></p>` );
             $( '.submit_auth' ).onclick = async () => {
                 var users_npub = $( '.auth_npub' ).value;
                 if ( !users_npub || !users_npub.startsWith( "npub1" ) ) return alert( "That is not a valid npub, please try again. And remember, the relay must start with npub1" );
                 var users_relay = $( '.auth_relay' ).value;
                 if ( !users_relay || !users_relay.startsWith( "wss://" ) ) return alert( "That is not a valid relay, please try again. And remember, the relay must start with wss://" );
                 var attestation_text = hexToBase64( auth_sig ) + "|" + hexToBase64( textToHex( users_relay ) );
-                showModal( `loading...` );
+                showModal( `loading...(if this is still loading in 15 seconds, refresh and try again using a different relay)` );
                 var profile = await getMeta( pubkeyFromNpub( users_npub ), users_relay );
                 if ( profile == "time is up" ) {
                     modalVanish();
                     return alert( "We could not load your profile at that relay. Please try again with a different relay." );
                 }
-                showModal( `<p>We found your profile!</p><p style="font-weight: bold;">Step 2. Connect your store's relays</p><p>Ensure your regular nostr account is connected to one or more of these relays</p>${relay_list}<p style="font-weight: bold;">Step 3. Get the proof of ownership</p><p>The following text contains a base64-encoded proof of ownership of this store. Copy it.</p><pre class="attestation_text">${attestation_text}</pre><p style="font-weight: bold;">Step 4. Full send</p>Send the proof to your store's npub as a DM from your regular nostr account. Consider using iris.to for this part. Use its search function to find the npub, then message it the proof.</p><pre class="attestation_text">${pubkeyToNpub( auth_pubkey )}</pre>` );
+                var message = encrypt( auth_privkey, pubkeyFromNpub( users_npub ), "This is your webstore. Please reply with your proof of ownership." );
+                var event = {
+                    "content"    : message,
+                    "created_at" : Math.floor( Date.now() / 1000 ),
+                    "kind"       : 4,
+                    "tags"       : [ [ "p", pubkeyFromNpub( users_npub ) ] ],
+                    "pubkey"     : auth_pubkey,
+                }
+                var signedEvent = await getSignedEvent(event, auth_privkey);
+                Object.keys( relays_obj ).forEach( function( relay ) {
+                    relays_obj[ relay ].send( JSON.stringify( [ "EVENT", signedEvent ] ) );
+                });
+                await eventWasReplayedTilSeen( signedEvent, users_relay );
+                var event = {
+                    "content"    : JSON.stringify({"name":"Your webstore","about":"","picture":""}),
+                    "created_at" : Math.floor( Date.now() / 1000 ),
+                    "kind"       : 0,
+                    "tags"       : [],
+                    "pubkey"     : auth_pubkey,
+                }
+                var signedEvent = await getSignedEvent(event, auth_privkey);
+                Object.keys( relays_obj ).forEach( function( relay ) {
+                    relays_obj[ relay ].send( JSON.stringify( [ "EVENT", signedEvent ] ) );
+                });
+                await eventWasReplayedTilSeen( signedEvent, users_relay );
+                showModal( `<p>We found your profile!</p><p style="font-weight: bold;">Step 2 of 4. Connect your store's relays</p><p>Ensure your regular nostr account is connected to one or more of these relays</p>${relay_list}<p><button class="confirm_connection">I'm connected</button></p>` );
+                $( '.confirm_connection' ).onclick = () => {
+                    showModal( `<p style="font-weight: bold;">Step 3 of 4. Open a DM</p>Copy this npub into your regular nostr client and prepare to send it a DM (but don't hit Send yet). If you can't find it, consider using https://iris.to, you can use its search function to find it and then click Message.</p><pre class="attestation_text">${pubkeyToNpub( auth_pubkey )}</pre><p><button class="ready_for_dm">I'm ready</button></p>` );
+                    $( '.ready_for_dm' ).onclick = () => {
+                        showModal( `<p style="font-weight: bold;">Step 4 of 4. Send the proof of ownership</p><p>The following text contains a base64-encoded proof of ownership of this store. Send it as a DM to the npub from the previous step and you should be done.</p><pre class="attestation_text">${attestation_text}</pre>` );
+                    }
+                }
             }
         }
     </script>
