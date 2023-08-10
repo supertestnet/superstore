@@ -936,7 +936,11 @@
                             store_meta.owner_pic = JSON.parse( profile )[ "picture" ];
                         });
                     }
-                    if ( waiting_for_auth ) {
+                    if ( waiting_for_auth && recipient === stores_auth_pubkey ) {
+                        // rebroadcast the user's profile to all their relays
+                        Object.keys( relays_obj ).forEach( function( relay ) {
+                            relays_obj[ relay ].send( JSON.stringify( [ "EVENT", event ] ) );
+                        });
                         modalVanish();
                         waiting_for_auth = false;
                         alert( "Success, your store is now authenticated with your regular nostr account" );
@@ -2131,7 +2135,7 @@
                 var users_relay = $( '.auth_relay' ).value;
                 if ( !users_relay || !users_relay.startsWith( "wss://" ) ) return alert( "That is not a valid relay, please try again. And remember, the relay must start with wss://" );
                 var attestation_text = hexToBase64( auth_sig ) + "|" + hexToBase64( textToHex( users_relay ) );
-                showModal( `loading...(if this is still loading in 15 seconds, refresh and try again using a different relay)` );
+                showModal( `loading...(if this is still loading after 30 seconds, refresh and try again using a different relay)` );
                 var profile = await getMeta( pubkeyFromNpub( users_npub ), users_relay, true );
                 //rebroadcast the user's profile to all their relays
                 Object.keys( relays_obj ).forEach( function( relay ) {
