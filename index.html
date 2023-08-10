@@ -937,7 +937,7 @@
                         });
                     }
                     if ( waiting_for_auth && recipient === stores_auth_pubkey ) {
-                        // rebroadcast the user's profile to all their relays
+                        // rebroadcast the user's auth message to all their relays
                         Object.keys( relays_obj ).forEach( function( relay ) {
                             relays_obj[ relay ].send( JSON.stringify( [ "EVENT", event ] ) );
                         });
@@ -1704,6 +1704,22 @@
                     var was_seen = await eventWasReplayedTilSeen( signedEvent );
                     // socket.send( JSON.stringify([ "EVENT", signedEvent ]) );
                     console.log( "make sure this gets to the relay:", JSON.stringify([ "EVENT", signedEvent ]) );
+                    //notify the store owner if they are authenticated
+                    if ( store_meta.owner_pub ) {
+                        var encrypted = encrypt( stores_auth_privkey, store_meta.owner_pub, "This is a notification of sale. Check your magic webstore for more details." );
+                        var event = {
+                            "content"    : encrypted,
+                            "created_at" : Math.floor( Date.now() / 1000 ),
+                            "kind"       : 4,
+                            "tags"       : [ [ 'p', store_meta.owner_pub ] ],
+                            "pubkey"     : stores_auth_pubkey,
+                        }
+                        var signedEvent = await getSignedEvent( event, stores_auth_privkey );
+                        Object.keys( relays_obj ).forEach( function( relay ) {
+                            relays_obj[ relay ].send( JSON.stringify([ "EVENT", signedEvent ]) );
+                        });
+                        var was_seen = await eventWasReplayedTilSeen( signedEvent, store_meta.owner_rel );
+                    }
                     await waitSomeSeconds( 2 );
                     sessionStorage.removeItem( "modal_cleared" );
                     var receipt_items = ``;
@@ -1748,6 +1764,22 @@
             var was_seen = await eventWasReplayedTilSeen( signedEvent );
             // socket.send( JSON.stringify([ "EVENT", signedEvent ]) );
             console.log( "make sure this gets to the relay:", JSON.stringify([ "EVENT", signedEvent ]) );
+            //notify the store owner if they are authenticated
+            if ( store_meta.owner_pub ) {
+                var encrypted = encrypt( stores_auth_privkey, store_meta.owner_pub, "This is a notification of sale. Check your magic webstore for more details." );
+                var event = {
+                    "content"    : encrypted,
+                    "created_at" : Math.floor( Date.now() / 1000 ),
+                    "kind"       : 4,
+                    "tags"       : [ [ 'p', store_meta.owner_pub ] ],
+                    "pubkey"     : stores_auth_pubkey,
+                }
+                var signedEvent = await getSignedEvent( event, stores_auth_privkey );
+                Object.keys( relays_obj ).forEach( function( relay ) {
+                    relays_obj[ relay ].send( JSON.stringify([ "EVENT", signedEvent ]) );
+                });
+                var was_seen = await eventWasReplayedTilSeen( signedEvent, store_meta.owner_rel );
+            }
             await waitSomeSeconds( 2 );
             sessionStorage.removeItem( "modal_cleared" );
             var receipt_items = ``;
