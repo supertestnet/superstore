@@ -41,6 +41,8 @@ Also make sure you withdraw your money from the store frequently. The site uses 
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
 
+- [ ] Make a relay management page
+- [ ] Give users more default relays
 - [ ] Let merchants toggle whether an item is enabled or disabled
 - [ ] Detect when a merchant changes their relays and show them their new magic string
 - [ ] Make a downloadable version with a rest api
