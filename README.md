@@ -41,7 +41,6 @@ Also make sure you withdraw your money from the store frequently. The site uses 
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
 
-- [ ] Automatically send notification dms to authenticated store owners
 - [ ] Let merchants toggle whether an item is enabled or disabled
 - [ ] Detect when a merchant changes their relays and show them their new magic string
 - [ ] Make a downloadable version with a rest api
@@ -76,3 +75,5 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [x] Educate merchants about resources like thebitcoincompany.com where they can use their earnings to buy visa gift cards -- e.g. merchants with a fiat webshop can load a visa card via bitcoin and unload it as usd in their regular shop, thus putting their bitcoin earnings into their regular workflow
 - [x] Show buyers a measurement of merchant activity -- e.g. did the merchant check their store this week? Did they fulfill any orders this week?
 - [x] Add a way to authenticate your store by connecting it to your nostr identity
+- [x] Automatically send notification dms to authenticated store owners
+
