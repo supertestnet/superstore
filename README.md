@@ -44,8 +44,9 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [ ] Make a relay management page
 - [ ] Give users more default relays
 - [ ] Let merchants toggle whether an item is enabled or disabled
-- [ ] Detect when a merchant changes their relays and show them their new magic string
-- [ ] Make a downloadable version with a rest api
+- [ ] When a merchant changes their relays show them their new magic string
+- [ ] When a merchant changes their relays send one last message to their old relays announcing their new ones, and have clients who detect that message automatically drop the old connections and start up the new ones
+- [ ] Make a downloadable version of magic webstore with a rest api
 - [ ] Custom styling -- people like to make things look nice and feel like it's themed after their regular blog or website or whatever. Ok cool but visual flare isn't very important to me so maybe someone else can add code for that. Do a pull request!
 - [ ] Connect your node -- right now Magic Webstore gives you an lnbits account but that is probably not a very scalable model and it's also custodial, meaning everyone will probably eventually get rugpulled by lnbits. To fix that, I want to make it easy for merchants to connect this app to their own node, that way they can only rug themselves. I hope to do this by writing an LND wrapper that lets you expose the "getInvoice" function and the "checkInvoice" function over nostr. We'll see how that goes
 - [ ] An aggregator -- what if the shop client aggregated all the products that ship to your region and displayed them all on one page regardless of who the actual merchant is? That could be super cool, like a craigslist but on bitcoin+nostr! Plus you could have categories and e.g. just browse all the offers by people who sell gift cards, or browse all the offers by people who want to trade fiat for bitcoin, etc.
