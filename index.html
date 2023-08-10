@@ -927,13 +927,13 @@
                         var pubkey = $_GET[ "pubkey" ] || original_pubkey;
                         var sig_is_good = await nobleSecp256k1.schnorr.verify( sig, pubkey.substring( 2 ), pubkey.substring( 2 ) );
                         if ( !sig_is_good ) return;
-                        var test = await getMeta( event.pubkey, users_relay );
-                        if ( !isValidJson( test ) ) return;
+                        var profile = await getMeta( event.pubkey, users_relay );
+                        if ( !isValidJson( profile ) ) return;
                         store_meta.setState( () => {
                             store_meta.owner_pub = event.pubkey;
                             store_meta.owner_rel = users_relay;
-                            store_meta.owner_nym = JSON.parse( test )[ "name" ];
-                            store_meta.owner_pic = JSON.parse( test )[ "picture" ];
+                            store_meta.owner_nym = JSON.parse( profile )[ "name" ];
+                            store_meta.owner_pic = JSON.parse( profile )[ "picture" ];
                         });
                     }
                     if ( waiting_for_auth ) {
@@ -1274,7 +1274,7 @@
             var returnable = await getTimeoutData();
             return returnable;
         }
-        async function getMeta( pubkey, relay ) {
+        async function getMeta( pubkey, relay, give_full_event ) {
             var started_waiting_time = Math.floor( Date.now() / 1000 );
             var note = "";
             var socket = new WebSocket( relay );
@@ -1292,7 +1292,8 @@
                 ]);
                 var id  = sha256( eventData ).toString( 'hex' );
                 var valid = await nobleSecp256k1.schnorr.verify( sig, id, event[ 2 ].pubkey );
-                if ( valid ) note = event[ 2 ].content;
+                if ( valid && !give_full_event ) note = event[ 2 ].content;
+                if ( valid && give_full_event ) note = event[ 2 ];
             });
             socket.addEventListener( 'open', function open() {
                 var randomid = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
@@ -2131,7 +2132,11 @@
                 if ( !users_relay || !users_relay.startsWith( "wss://" ) ) return alert( "That is not a valid relay, please try again. And remember, the relay must start with wss://" );
                 var attestation_text = hexToBase64( auth_sig ) + "|" + hexToBase64( textToHex( users_relay ) );
                 showModal( `loading...(if this is still loading in 15 seconds, refresh and try again using a different relay)` );
-                var profile = await getMeta( pubkeyFromNpub( users_npub ), users_relay );
+                var profile = await getMeta( pubkeyFromNpub( users_npub ), users_relay, true );
+                //rebroadcast the user's profile to all their relays
+                Object.keys( relays_obj ).forEach( function( relay ) {
+                    relays_obj[ relay ].send( JSON.stringify( [ "EVENT", profile ] ) );
+                });
                 if ( profile == "time is up" ) {
                     modalVanish();
                     return alert( "We could not load your profile at that relay. Please try again with a different relay." );
