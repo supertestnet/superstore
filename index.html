@@ -2143,7 +2143,7 @@
                 });
                 if ( profile == "time is up" ) {
                     modalVanish();
-                    return alert( "We could not load your profile at that relay. Please try again with a different relay." );
+                    return showModal( "<p>We could not load your profile at that relay. Please try again. Troubleshooting tips:</p><p>(1) Try using a different relay.</p><p>(2) Resubmit your profile in your regular nostr client before trying again to ensure that all your relays have a recent copy. This helps because some relays return recent events faster than old events, and the profile getter on Magic Webstore times out if the relay takes too long.</p><p>(3) In some clients you need to make a minor change, e.g. to your bio, before you can resubmit it.</p>" );
                 }
                 var message = encrypt( auth_privkey, pubkeyFromNpub( users_npub ), "This is your webstore. Please reply with your proof of ownership." );
                 var event = {
