@@ -2247,13 +2247,17 @@
                         } else {
                             msg += `please replace the relay (your current set of relays is in your url bar) with another one from this list: https://nostr.watch, then press enter, then resubmit your store with your new set of relays, then click "view store" and share your updated store link publicly so that people stop using the old one with the relay that isn't working. If this message is confusing, please ask the developer of this app, Super Testnet, for assistance by raising an issue on his github: github.com/supertestnet/superstore/`;
                         }
-                        if ( relays_i_connected_to.length < 2 || $_GET[ "privkey" ] ) showModal( msg );
                         relays_obj[ relay ] = new WebSocket( relay );
                         relays_obj[ relay ].removeEventListener( 'open', openConnection );
                         relays_obj[ relay ].removeEventListener( 'message', handleMessage );
                         relays_obj[ relay ] = new WebSocket( relay );
                         relays_obj[ relay ].addEventListener( 'message', handleMessage );
                         relays_obj[ relay ].addEventListener( 'open', openConnection );
+                        if ( relays_i_connected_to.length < 2 || $_GET[ "privkey" ] ) {
+                            setTimeout( () => {
+                                if ( relays_obj[ Object.keys( relays_obj )[ 0 ] ].readyState != 1 ) showModal( msg );
+                            }, 5000 );
+                        }
                     }
                 });
                 checkHeartbeat();
