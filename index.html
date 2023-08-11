@@ -704,6 +704,7 @@
         var stores_auth_pubkey;
         var waiting_for_auth = false;
         var auth_sub = null;
+        var relays_i_connected_to = [];
         if ( localStorage[ "shipped_orders" ] ) var shipped_orders = JSON.parse( localStorage[ "shipped_orders" ] ); else var shipped_orders = [];
         sessionStorage.clear();
         var sales = [];
@@ -1356,6 +1357,25 @@
             var was_seen = await eventWasReplayedTilSeen( event, the_relay );
             return was_seen;
         }
+        var eventWasSeenByTwoRelays = async event => {
+            var seen_by = 0;
+            var i; for ( i=0; i<Object.keys( relays_obj ).length; i++ ) {
+                var relay = Object.keys( relays_obj )[ i ];
+                var was_seen = await getNostrNote( event.id, relay );
+                if ( was_seen === "time is up" ) continue;
+                seen_by = seen_by + 1;
+            }
+            if ( seen_by > 1 ) return true;
+        }
+        var ensureEventWasSeenByTwoRelays = async event => {
+            Object.keys( relays_obj ).forEach( function( relay ) {
+                relays_obj[ relay ].send( JSON.stringify( [ "EVENT", event ] ) );
+            });
+            await waitSomeSeconds( 2 );
+            var was_seen = await eventWasSeenByTwoRelays( event );
+            if ( !was_seen ) was_seen = await ensureEventWasSeenByTwoRelays( event );
+            return was_seen;
+        }
         function pubkeyFromNpub( npub ) {
             return bytesToHex( bech32.bech32.fromWords( bech32.bech32.decode( npub ).words ) );
         }
@@ -1701,7 +1721,8 @@
                     // Object.keys( relays_obj ).forEach( function( relay ) {
                     //     relays_obj[ relay ].send( JSON.stringify([ "EVENT", signedEvent ]) );
                     // });
-                    var was_seen = await eventWasReplayedTilSeen( signedEvent );
+                    // var was_seen = await eventWasReplayedTilSeen( signedEvent );
+                    var was_seen = await ensureEventWasSeenByTwoRelays( signedEvent );
                     // socket.send( JSON.stringify([ "EVENT", signedEvent ]) );
                     console.log( "make sure this gets to the relay:", JSON.stringify([ "EVENT", signedEvent ]) );
                     //notify the store owner if they are authenticated
@@ -1718,7 +1739,7 @@
                         Object.keys( relays_obj ).forEach( function( relay ) {
                             relays_obj[ relay ].send( JSON.stringify([ "EVENT", signedEvent ]) );
                         });
-                        var was_seen = await eventWasReplayedTilSeen( signedEvent, store_meta.owner_rel );
+                        eventWasReplayedTilSeen( signedEvent, store_meta.owner_rel );
                     }
                     await waitSomeSeconds( 2 );
                     sessionStorage.removeItem( "modal_cleared" );
@@ -1824,6 +1845,7 @@
     <script>
         async function openConnection() {
             console.log( "connected to " + this.url );
+            if ( !relays_i_connected_to.includes( this.url ) ) relays_i_connected_to.push( this.url );
             var subId   = ( "00" + bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ) ).substring( 0, 16 );
             if ( $_GET[ "pubkey"] ) {
                 var filter  = { authors: [ $_GET[ "pubkey" ].substring( 2 ) ], kinds: [ 12196, 42199 ] }
@@ -2225,7 +2247,7 @@
                         } else {
                             msg += `please replace the relay (your current set of relays is in your url bar) with another one from this list: https://nostr.watch, then press enter, then resubmit your store with your new set of relays, then click "view store" and share your updated store link publicly so that people stop using the old one with the relay that isn't working. If this message is confusing, please ask the developer of this app, Super Testnet, for assistance by raising an issue on his github: github.com/supertestnet/superstore/`;
                         }
-                        showModal( msg );
+                        if ( relays_i_connected_to.length < 2 || $_GET[ "privkey" ] ) showModal( msg );
                         relays_obj[ relay ] = new WebSocket( relay );
                         relays_obj[ relay ].removeEventListener( 'open', openConnection );
                         relays_obj[ relay ].removeEventListener( 'message', handleMessage );
