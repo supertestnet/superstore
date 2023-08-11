@@ -2253,7 +2253,8 @@
                         relays_obj[ relay ] = new WebSocket( relay );
                         relays_obj[ relay ].addEventListener( 'message', handleMessage );
                         relays_obj[ relay ].addEventListener( 'open', openConnection );
-                        if ( relays_i_connected_to.length < 2 || $_GET[ "privkey" ] ) {
+                        if ( relays_i_connected_to.length < 2 && $_GET[ "pubkey" ] ) showModal( msg );
+                        if ( $_GET[ "privkey" ] ) {
                             setTimeout( () => {
                                 if ( relays_obj[ Object.keys( relays_obj )[ 0 ] ].readyState != 1 ) showModal( msg );
                             }, 5000 );
