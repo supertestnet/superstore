@@ -2245,7 +2245,7 @@
                 $( '.confirm_connection' ).onclick = () => {
                     showModal( `<p style="font-weight: bold;">Step 3 of 4. Open a DM</p>Copy this npub into your regular nostr client and prepare to send it a DM (but don't hit Send yet). If you can't find it, consider using https://iris.to, you can use its search function to find it and then click Message.</p><pre class="attestation_text">${pubkeyToNpub( auth_pubkey )}</pre><p><button class="ready_for_dm">I'm ready</button></p>` );
                     $( '.ready_for_dm' ).onclick = () => {
-                        showModal( `<p style="font-weight: bold;">Step 4 of 4. Send the proof of ownership</p><p>The following text contains a base64-encoded proof of ownership of this store. Send it as a DM to the npub from the previous step and you should be done.</p><pre class="attestation_text">${attestation_text}</pre>` );
+                        showModal( `<p style="font-weight: bold;">Step 4 of 4. Send the proof of ownership</p><p>The following text contains a base64-encoded proof of ownership of this store. Send it as a DM to the npub from the previous step and you should see a confirmation message on this screen. If the confirmation message does not appear quickly, try again.</p><pre class="attestation_text">${attestation_text}</pre>` );
                     }
                 }
             }
