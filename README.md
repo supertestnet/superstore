@@ -41,6 +41,8 @@ Also make sure you withdraw your money from the store frequently. The site uses 
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
 
+- [ ] Move the libraries this page depends on onto my own github
+- [ ] Investigate and fix the error where donation amounts do not display properly on the checkout page
 - [ ] Make a relay management page
 - [ ] Give users more default relays
 - [ ] Let merchants toggle whether an item is enabled or disabled
