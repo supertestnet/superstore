@@ -964,7 +964,7 @@
                         });
                         modalVanish();
                         waiting_for_auth = false;
-                        showModal( "Success, your store is now authenticated with your regular nostr account" );
+                        showModal( `Success, your store is now authenticated with your regular nostr account. If the "Store Owner" badge doesn't show up on the frontend, resubmit your store by clicking the "Submit" button on your backend.` );
                     }
                 }
                 if ( kind === 42196 ) {
@@ -2250,7 +2250,7 @@
                     showModal( "Authenticating your store..." );
                     await eventWasReplayedTilSeen( event, Object.keys( relays_obj )[ 0 ] );
                     waiting_for_auth = false;
-                    showModal( "Success, your store is now authenticated with your regular nostr account" );
+                    showModal( `Success, your store is now authenticated with your regular nostr account. If the "Store Owner" badge doesn't show up on the frontend, resubmit your store by clicking the "Submit" button on your backend.` );
                 }
             } else {
                 var relay_list = `<ul style="background-color: tan; padding: 1rem;">`;
