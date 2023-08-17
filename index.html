@@ -253,7 +253,9 @@
         if ( $_GET[ "network" ] == "testnet" ) mempoolNetwork = $_GET[ "network" ] + "/";
         var index = window.location.pathname.indexOf( "index.htm" ) > -1 ? window.location.pathname.indexOf( "index.htm" ):100000;
         var extra_slash = window.location.pathname.substring( 0, index ).endsWith( "/" ) ? "":"/";
-        if ( !$_GET[ "privkey" ] && !$_GET[ "pubkey" ] ) window.location.href = window.location.href = window.location.protocol + "//" + window.location.hostname + window.location.pathname.substring( 0, index ) + extra_slash + "onboard.html";
+        var port = "";
+        if ( window.location.port ) port = `:${window.location.port}`;
+        if ( !$_GET[ "privkey" ] && !$_GET[ "pubkey" ] ) window.location.href = window.location.href = window.location.protocol + "//" + window.location.hostname + port + window.location.pathname.substring( 0, index ) + extra_slash + "onboard.html";
     </script>
     <script>
         sessionStorage.removeItem( "wallet_found_if_any" );
@@ -863,7 +865,9 @@
                         $( '.product_instructions' ).innerText = "Manage products";
                         $( '.public_link' ).style.display = "inline";
                         $( '.connect_nostr' ).style.display = "inline";
-                        $( '.public_link' ).href = window.location.protocol + "//" + window.location.hostname + window.location.pathname + `?pubkey=${original_pubkey}&relays=${encodeURI( JSON.stringify( relays ) )}`;
+                        var port = "";
+                        if ( window.location.port ) port = `:${window.location.port}`;
+                        $( '.public_link' ).href = window.location.protocol + "//" + window.location.hostname + port + window.location.pathname + `?pubkey=${original_pubkey}&relays=${encodeURI( JSON.stringify( relays ) )}`;
                     }
                     products = [];
                     $( '.store_products' ).innerHTML = ``;
@@ -942,6 +946,8 @@
                         var pubkey = $_GET[ "pubkey" ] || original_pubkey;
                         var sig_is_good = await nobleSecp256k1.schnorr.verify( sig, pubkey.substring( 2 ), pubkey.substring( 2 ) );
                         if ( !sig_is_good ) return;
+                        console.log( "content:", content );
+                        console.log( "users relay:", users_relay );
                         var profile = await getMeta( event.pubkey, users_relay );
                         if ( !isValidJson( profile ) ) return;
                         store_meta.setState( () => {
@@ -2193,61 +2199,116 @@
         }
         $( '.connect_nostr' ).onclick = async () => {
             waiting_for_auth = true;
-            var relay_list = `<ul style="background-color: tan; padding: 1rem;">`;
-            Object.keys( relays_obj ).forEach( item => {
-                relay_list += `<li>${item}</li>`;
-            });
-            relay_list += `</ul>`;
-            var auth_sig = await nobleSecp256k1.schnorr.sign( pubKey, privKey );
-            showModal( `<p style="font-weight: bold;">Step 1 of 4. Let's find your profile</p><p>Enter your regular nostr account's npub and a relay you use. We'll try to find your profile.</p><p><input class="auth_npub" placeholder="npub1..."></p><p><input class="auth_relay" placeholder="wss://..."></p><p><button class="submit_auth">Submit</button></p>` );
-            $( '.submit_auth' ).onclick = async () => {
-                var users_npub = $( '.auth_npub' ).value;
-                if ( !users_npub || !users_npub.startsWith( "npub1" ) ) return alert( "That is not a valid npub, please try again. And remember, the relay must start with npub1" );
-                var users_relay = $( '.auth_relay' ).value;
-                if ( !users_relay || !users_relay.startsWith( "wss://" ) ) return alert( "That is not a valid relay, please try again. And remember, the relay must start with wss://" );
-                var attestation_text = hexToBase64( auth_sig ) + "|" + hexToBase64( textToHex( users_relay ) );
-                showModal( `loading...(if this is still loading after 30 seconds, refresh and try again using a different relay)` );
-                var profile = await getMeta( pubkeyFromNpub( users_npub ), users_relay, true );
-                //rebroadcast the user's profile to all their relays
-                Object.keys( relays_obj ).forEach( function( relay ) {
-                    relays_obj[ relay ].send( JSON.stringify( [ "EVENT", profile ] ) );
-                });
-                if ( profile == "time is up" ) {
-                    modalVanish();
-                    return showModal( "<p>We could not load your profile at that relay. Please try again. Troubleshooting tips:</p><p>(1) Try using a different relay.</p><p>(2) Resubmit your profile in your regular nostr client before trying again to ensure that all your relays have a recent copy. This helps because some relays return recent events faster than old events, and the profile getter on Magic Webstore times out if the relay takes too long.</p><p>(3) In some clients you need to make a minor change, e.g. to your bio, before you can resubmit it.</p>" );
-                }
-                var message = encrypt( auth_privkey, pubkeyFromNpub( users_npub ), "This is your webstore. Please reply with your proof of ownership from step 4." );
-                var event = {
-                    "content"    : message,
-                    "created_at" : Math.floor( Date.now() / 1000 ),
-                    "kind"       : 4,
-                    "tags"       : [ [ "p", pubkeyFromNpub( users_npub ) ] ],
-                    "pubkey"     : auth_pubkey,
-                }
-                var signedEvent = await getSignedEvent(event, auth_privkey);
-                Object.keys( relays_obj ).forEach( function( relay ) {
-                    relays_obj[ relay ].send( JSON.stringify( [ "EVENT", signedEvent ] ) );
-                });
-                await eventWasReplayedTilSeen( signedEvent, users_relay );
-                var event = {
-                    "content"    : JSON.stringify({"name":"Your webstore","about":"","picture":""}),
-                    "created_at" : Math.floor( Date.now() / 1000 ),
-                    "kind"       : 0,
-                    "tags"       : [],
-                    "pubkey"     : auth_pubkey,
-                }
-                var signedEvent = await getSignedEvent(event, auth_privkey);
-                Object.keys( relays_obj ).forEach( function( relay ) {
-                    relays_obj[ relay ].send( JSON.stringify( [ "EVENT", signedEvent ] ) );
-                });
-                await eventWasReplayedTilSeen( signedEvent, users_relay );
-                showModal( `<p>We found your profile!</p><p style="font-weight: bold;">Step 2 of 4. Connect your store's relays</p><p>Ensure your regular nostr account is connected to one or more of these relays</p>${relay_list}<p><button class="confirm_connection">I'm connected</button></p>` );
-                $( '.confirm_connection' ).onclick = () => {
-                    showModal( `<p style="font-weight: bold;">Step 3 of 4. Open a DM</p>Copy this npub into your regular nostr client and prepare to send it a DM (but don't hit Send yet). If you can't find it, consider using https://iris.to, you can use its search function to find it and then click Message.</p><pre class="attestation_text">${pubkeyToNpub( auth_pubkey )}</pre><p><button class="ready_for_dm">I'm ready</button></p>` );
-                    $( '.ready_for_dm' ).onclick = () => {
-                        showModal( `<p style="font-weight: bold;">Step 4 of 4. Send the proof of ownership</p><p>The following text contains a base64-encoded proof of ownership of this store. Send it as a DM to the npub from the previous step and you should see a confirmation message on this screen. If the confirmation message does not appear quickly, try again.</p><pre class="attestation_text">${attestation_text}</pre>` );
+            if ( window.nostr ) {
+                var primary_relay = Object.keys( relays_obj )[ 0 ];
+                showModal( `<p style="font-weight: bold;">Step 1 of 2. Let's find your profile</p><p>Enter your regular nostr account's npub and a relay you use. We'll try to find your profile.</p><p><input class="auth_npub" placeholder="npub1..."></p><p><input class="auth_relay" placeholder="wss://..."></p><p><button class="submit_auth">Submit</button></p>` );
+                $( '.submit_auth' ).onclick = async () => {
+                    var users_npub = $( '.auth_npub' ).value;
+                    if ( !users_npub || !users_npub.startsWith( "npub1" ) ) return alert( "That is not a valid npub, please try again. And remember, the relay must start with npub1" );
+                    var users_relay = $( '.auth_relay' ).value;
+                    if ( !users_relay || !users_relay.startsWith( "wss://" ) ) return alert( "That is not a valid relay, please try again. And remember, the relay must start with wss://" );
+                    showModal( `loading...(if this is still loading after 30 seconds, refresh and try again using a different relay)` );
+                    var profile = await getMeta( pubkeyFromNpub( users_npub ), users_relay, true );
+                    if ( profile == "time is up" ) {
+                        modalVanish();
+                        return showModal( "<p>We could not load your profile at that relay. Please try again. Troubleshooting tips:</p><p>(1) Try using a different relay.</p><p>(2) Resubmit your profile in your regular nostr client before trying again to ensure that all your relays have a recent copy. This helps because some relays return recent events faster than old events, and the profile getter on Magic Webstore times out if the relay takes too long.</p><p>(3) In some clients you need to make a minor change, e.g. to your bio, before you can resubmit it.</p>" );
                     }
+                    //rebroadcast the user's profile to all their relays
+                    await eventWasReplayedTilSeen( profile, primary_relay );
+                    Object.keys( relays_obj ).forEach( function( relay ) {
+                        relays_obj[ relay ].send( JSON.stringify( [ "EVENT", profile ] ) );
+                    });
+                    var auth_sig = await nobleSecp256k1.schnorr.sign( pubKey, privKey );
+                    var user_pubkey = await window.nostr.getPublicKey();
+                    var note = hexToBase64( auth_sig ) + "|" + hexToBase64( textToHex( Object.keys( relays_obj )[ 0 ] ) );
+                    console.log( "here is the note:", note, Object.keys( relays_obj )[ 0 ] );
+                    var encrypted = await window.nostr.nip04.encrypt( auth_pubkey, note );
+                    var event = {
+                        "content"    : encrypted,
+                        "created_at" : Math.floor( Date.now() / 1000 ),
+                        "kind"       : 4,
+                        "tags"       : [["p", auth_pubkey]],
+                        "pubkey"     : user_pubkey,
+                    }
+                    var eventArray = [
+                        0,
+                        event['pubkey'],
+                        event['created_at'],
+                        event['kind'],
+                        event['tags'],
+                        event['content']
+                    ];
+                    var eventData = JSON.stringify( eventArray );
+                    event.id  = sha256( eventData ).toString( 'hex' );
+                    console.log( "here is the event:", event );
+                    var signedEvent = await window.nostr.signEvent( event );
+                    if ( typeof( signedEvent ) == "string" ) {
+                        event.sig = signedEvent;
+                    } else {
+                        event.sig = signedEvent.sig;
+                    }
+                    showModal( "Authenticating your store..." );
+                    await eventWasReplayedTilSeen( event, Object.keys( relays_obj )[ 0 ] );
+                    waiting_for_auth = false;
+                    showModal( "Success, your store is now authenticated with your regular nostr account" );
                 }
+            } else {
+                var relay_list = `<ul style="background-color: tan; padding: 1rem;">`;
+                Object.keys( relays_obj ).forEach( item => {
+                    relay_list += `<li>${item}</li>`;
+                });
+                relay_list += `</ul>`;
+                var auth_sig = await nobleSecp256k1.schnorr.sign( pubKey, privKey );
+                showModal( `<p style="font-weight: bold;">Step 1 of 4. Let's find your profile</p><p>Enter your regular nostr account's npub and a relay you use. We'll try to find your profile.</p><p><input class="auth_npub" placeholder="npub1..."></p><p><input class="auth_relay" placeholder="wss://..."></p><p><button class="submit_auth">Submit</button></p>` );
+                $( '.submit_auth' ).onclick = async () => {
+                    var users_npub = $( '.auth_npub' ).value;
+                    if ( !users_npub || !users_npub.startsWith( "npub1" ) ) return alert( "That is not a valid npub, please try again. And remember, the relay must start with npub1" );
+                    var users_relay = $( '.auth_relay' ).value;
+                    if ( !users_relay || !users_relay.startsWith( "wss://" ) ) return alert( "That is not a valid relay, please try again. And remember, the relay must start with wss://" );
+                    var attestation_text = hexToBase64( auth_sig ) + "|" + hexToBase64( textToHex( users_relay ) );
+                    showModal( `loading...(if this is still loading after 30 seconds, refresh and try again using a different relay)` );
+                    var profile = await getMeta( pubkeyFromNpub( users_npub ), users_relay, true );
+                    //rebroadcast the user's profile to all their relays
+                    Object.keys( relays_obj ).forEach( function( relay ) {
+                        relays_obj[ relay ].send( JSON.stringify( [ "EVENT", profile ] ) );
+                    });
+                    if ( profile == "time is up" ) {
+                        modalVanish();
+                        return showModal( "<p>We could not load your profile at that relay. Please try again. Troubleshooting tips:</p><p>(1) Try using a different relay.</p><p>(2) Resubmit your profile in your regular nostr client before trying again to ensure that all your relays have a recent copy. This helps because some relays return recent events faster than old events, and the profile getter on Magic Webstore times out if the relay takes too long.</p><p>(3) In some clients you need to make a minor change, e.g. to your bio, before you can resubmit it.</p>" );
+                    }
+                    var message = encrypt( auth_privkey, pubkeyFromNpub( users_npub ), "This is your webstore. Please reply with your proof of ownership from step 4." );
+                    var event = {
+                        "content"    : message,
+                        "created_at" : Math.floor( Date.now() / 1000 ),
+                        "kind"       : 4,
+                        "tags"       : [ [ "p", pubkeyFromNpub( users_npub ) ] ],
+                        "pubkey"     : auth_pubkey,
+                    }
+                    var signedEvent = await getSignedEvent(event, auth_privkey);
+                    Object.keys( relays_obj ).forEach( function( relay ) {
+                        relays_obj[ relay ].send( JSON.stringify( [ "EVENT", signedEvent ] ) );
+                    });
+                    await eventWasReplayedTilSeen( signedEvent, users_relay );
+                    var event = {
+                        "content"    : JSON.stringify({"name":"Your webstore","about":"","picture":""}),
+                        "created_at" : Math.floor( Date.now() / 1000 ),
+                        "kind"       : 0,
+                        "tags"       : [],
+                        "pubkey"     : auth_pubkey,
+                    }
+                    var signedEvent = await getSignedEvent(event, auth_privkey);
+                    Object.keys( relays_obj ).forEach( function( relay ) {
+                        relays_obj[ relay ].send( JSON.stringify( [ "EVENT", signedEvent ] ) );
+                    });
+                    await eventWasReplayedTilSeen( signedEvent, users_relay );
+                    showModal( `<p>We found your profile!</p><p style="font-weight: bold;">Step 2 of 4. Connect your store's relays</p><p>Ensure your regular nostr account is connected to one or more of these relays</p>${relay_list}<p><button class="confirm_connection">I'm connected</button></p>` );
+                    $( '.confirm_connection' ).onclick = () => {
+                        showModal( `<p style="font-weight: bold;">Step 3 of 4. Open a DM</p>Copy this npub into your regular nostr client and prepare to send it a DM (but don't hit Send yet). If you can't find it, consider using https://iris.to, you can use its search function to find it and then click Message.</p><pre class="attestation_text">${pubkeyToNpub( auth_pubkey )}</pre><p><button class="ready_for_dm">I'm ready</button></p>` );
+                        $( '.ready_for_dm' ).onclick = () => {
+                            showModal( `<p style="font-weight: bold;">Step 4 of 4. Send the proof of ownership</p><p>The following text contains a base64-encoded proof of ownership of this store. Send it as a DM to the npub from the previous step and you should see a confirmation message on this screen. If the confirmation message does not appear quickly, try again.</p><pre class="attestation_text">${attestation_text}</pre>` );
+                        }
+                    }
+                }                
             }
         }
     </script>
