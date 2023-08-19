@@ -44,6 +44,7 @@ Not sure. Usually after I get a project to a state like this one is in I abandon
 - [ ] Move the libraries this page depends on onto my own github
 - [ ] Make a relay management page
 - [ ] Give users more default relays
+- [ ] Let merchants price their goods in sats
 - [ ] Let merchants toggle whether an item is enabled or disabled
 - [ ] When a merchant changes their relays show them their new magic string
 - [ ] When a merchant changes their relays send one last message to their old relays announcing their new ones, and have clients who detect that message automatically drop the old connections and start up the new ones
