@@ -57,6 +57,12 @@ git submodule update --init
 
 After running that you should have a `superstore` directory in your web root.
 
+Finally, you will need to add an HTTP header to allow cross origin loading of data from blockstream.info (this is to see transactions on the chain). In nginx, this would mean adding something like the example below to your configuration file:
+
+```
+add_header Access-Control-Allow-Origin "https://blockstream.info";
+```
+
 # What are some upcoming features?
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:
