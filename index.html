@@ -660,7 +660,8 @@
         }
         async function makeLNWallet( identifier ) {
             identifier = identifier.substring( 0, 15 );
-            var mywallet = await getData( "https://legend.lnbits.com/wallet?nme=" + identifier );
+            var myaccount = JSON.parse(await postData( "https://legend.lnbits.com/api/v1/account", '{"name":"'+identifier+'"}', content_type = "application/json"))
+            var mywallet = await getData( "https://legend.lnbits.com/wallet?usr="+myaccount["user"]+"&wal="+myaccount["id"]);
             var key1prep = mywallet.split( "Wallet ID:" );
             wallet_id = key1prep[ 1 ].substring( 14, 46 );
             var key2prep = mywallet.split( "Admin key:" );
