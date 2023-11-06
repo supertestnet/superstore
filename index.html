@@ -245,10 +245,14 @@
     <script>
         var $ = document.querySelector.bind( document );
         var $$ = document.querySelectorAll.bind( document );
+        // Accept parameters via either the query parameters...
         var url_params = new URLSearchParams( window.location.search );
         var url_keys = url_params.keys();
         var $_GET = {}
         for ( var key of url_keys ) $_GET[ key ] = url_params.get( key );
+        // ...or the fragment section of the URL
+        url_params = new URLSearchParams( window.location.hash.substring(1) );
+        for ( var key of url_params.keys() ) $_GET[ key ] = url_params.get( key );
         var mempoolNetwork = "";
         if ( $_GET[ "network" ] == "testnet" ) mempoolNetwork = $_GET[ "network" ] + "/";
         var index = window.location.pathname.indexOf( "index.htm" ) > -1 ? window.location.pathname.indexOf( "index.htm" ):100000;
@@ -1633,7 +1637,7 @@
             if ( window.location.href.indexOf( "?" ) > -1 ) var url = window.location.href.substring( 0, window.location.href.indexOf( "?" ) ); else var url = window.location.href;
             sessionStorage.removeItem( "modal_cleared" );
             var shareable = `${url}?pubkey=${original_pubkey}&relays=${encodeURI( JSON.stringify( relays ) )}`;
-            var private = `${url}?privkey=${privKey}&relays=${encodeURI( JSON.stringify( relays ) )}`;
+            var private = `${url}#privkey=${privKey}&relays=${encodeURI( JSON.stringify( relays ) )}`;
             if ( $_GET[ "network" ] ) {
                 shareable += `&network=${$_GET[ "network" ]}`;
                 private += `&network=${$_GET[ "network" ]}`;

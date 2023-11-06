@@ -37,6 +37,26 @@ Important! Save your magic string. It contains your private key which you'll nee
 
 Also make sure you withdraw your money from the store frequently. The site uses whisper keys, which are sent to you in dms and not stored anywhere except on whatever relays you use. I personally don't trust nostr relays to store my dms forever so I recommend you withdraw your money quickly when you receive it, don't just let it sit there for weeks on end or the nostr relay you are connected to might delete your dms or go offline and leave you stranded without access to your money
 
+# How do I self host it?
+
+Check out this repo into a directory on your web server. Go to /superstore on your website (e.g. https://example.com/superstore) and set up your store in the same way as described above.
+
+If you already have your website in its own git repo, you can add superstore as a git submodule. To do so, run this command:
+
+```
+git submodule add --name superstore https://github.com/supertestnet/superstore.git signet/superstore
+```
+
+After that, you'll have to commit the superstore directory and the .gitmodules file and push it to your git server as usual.
+
+Then when you check out the repo on the web server, use the --recursive flag. If you already have it checked out on the web server, you can force git to pull in the submodules like so:
+
+```
+git submodule update --init
+```
+
+After running that you should have a `superstore` directory in your web root.
+
 # What are some upcoming features?
 
 Not sure. Usually after I get a project to a state like this one is in I abandon it in favor of something else that's more exciting. But if I do keep at it I'd like to add these features:

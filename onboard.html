@@ -293,7 +293,7 @@
                 var extra_slash = window.location.pathname.substring( 0, index ).endsWith( "/" ) ? "":"/";
                 var port = "";
                 if ( window.location.port ) port = `:${window.location.port}`;
-                var url = window.location.protocol + "//" + window.location.hostname + port + window.location.pathname.substring( 0, index ) + extra_slash + "index.html?privkey=" + privkey + "&relays=" + encodeURI( relays );
+                var url = window.location.protocol + "//" + window.location.hostname + port + window.location.pathname.substring( 0, index ) + extra_slash + "index.html#privkey=" + privkey + "&relays=" + encodeURI( relays );
                 window.location.href = url;
             }
             var genString = () => {
