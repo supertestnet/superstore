@@ -1722,6 +1722,7 @@
                 $( '.payment_box' ).append( div );
                 $( '.bl_box' ).append( createQR( whisper_data[ "whisper_address" ] ) );
                 $( '.bl_box' ).append( whisper_data[ "whisper_address" ] );
+                $( '.bl_box' ).innerHTML = "<br>Base layer payments disabled due to a bug";
                 var was_it_stopped = await loopTilAddressReceivesMoney( whisper_data[ "whisper_address" ], mempoolNetwork );
                 if ( was_it_stopped == "stopped" ) return;
                 await waitSomeSeconds( 2 );
