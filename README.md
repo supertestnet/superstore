@@ -29,7 +29,7 @@ Nostr makes a lot of stuff that used to need a server not need one anymore. Or a
 
 # How do I try it?
 
-Just visit this link: https://magicwebstore.xyz/
+Just visit this link: [https://magicwebstore.xyz/](https://supertestnet.github.io/superstore/)
 
 You'll be guided through a simple three step procedure: first, backup your "magic string" (which is just your nostr private key and a set of default relays, hex encoded), then log in with it, then start creating your store. There is hardly any setup process for the store itself, you just name it and immediately start adding products. When you're done you'll get a shareable link where anyone can view your store.
 
